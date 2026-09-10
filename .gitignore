@@ -1,0 +1,6 @@
+backend/GUIA_ARQUITETURA_E_PASSO_A_PASSO.md
+backend/PROJECT_STATUS_AND_ROADMAP.md
+
+# AI agent configs
+.agent/
+.gemini/
