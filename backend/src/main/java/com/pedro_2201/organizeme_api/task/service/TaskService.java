@@ -14,11 +14,11 @@ public class TaskService {
     @Autowired //Injeta o repositório automaticamente
     private TaskRepository taskRepository; //Injeta o repositório para usar os métodos de acesso a dados
 
-    public List<Task> getAllOrganizes() {
+    public List<Task> getAllTasks() {
         return taskRepository.findAll(); //Chama o metodo do repositório para buscar todos os organizes
     }
 
-    public Task getOrganizeById(@RequestParam Long id) {
+    public Task getTaskById(@RequestParam Long id) {
         return taskRepository.getReferenceById(id);
     }
 

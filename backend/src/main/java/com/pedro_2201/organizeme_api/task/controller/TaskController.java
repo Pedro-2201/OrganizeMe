@@ -17,12 +17,12 @@ public class TaskController {
 
     @GetMapping //Define o endpoint GET /tasks
     public List<Task> listar() {
-        return taskService.getAllOrganizes(); //Chama o métodoo do serviço para buscar todos os organizes
+        return taskService.getAllTasks(); //Chama o métodoo do serviço para buscar todos os organizes
     }
 
     @GetMapping("/{id}") //Define o endpoint GET /tasks/{id}
     public Task buscarPorId(@PathVariable Long id) {
-        return taskService.getOrganizeById(id); //Chama o métodoo do serviço para buscar uma task por ID
+        return taskService.getTaskById(id); //Chama o métodoo do serviço para buscar uma task por ID
     }
 
     @PostMapping //Define o endpoint POST /tasks
