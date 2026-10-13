@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data //Gera automaticamente getters, setters, toString, equals e hashCode
 @Entity //Diz ao JPA que essa classe representa uma tabela no banco de dados
-@Table(name = "organize_tasks") //Opcional: define o nome da tabela no banco de dados
+@Table(name = "tasks") //Opcional: define o nome da tabela no banco de dados
 public class Task {
 
     @Id //Marca esse campo como chave primária da tabela
