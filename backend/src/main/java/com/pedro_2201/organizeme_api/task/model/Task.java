@@ -35,10 +35,10 @@ public class Task {
     private Priority priority = Priority.MEDIUM; // Nível de prioridade da tarefa (padrão: MEDIUM)
 
     @Builder.Default // Mantém o valor padrão na construção via Builder
-    private Integer estimatedPomodoros = 0; // Quantidade estimada de ciclos pomodoro
+    private Integer estimatedMinutes = 0; // Tempo estimado para conclusão da tarefa em minutos
 
     @Builder.Default // Mantém o valor padrão na construção via Builder
-    private Integer completedPomodoros = 0; // Quantidade de ciclos pomodoro já concluídos
+    private Integer spentMinutes = 0; // Tempo real já dedicado à tarefa em minutos
 
     @ManyToOne(fetch = FetchType.LAZY) // Relacionamento Muitos-para-Um com busca sob demanda (LAZY)
     @JoinColumn(name = "goal_id", nullable = true) // Chave estrangeira para a tabela goals (opcional)
