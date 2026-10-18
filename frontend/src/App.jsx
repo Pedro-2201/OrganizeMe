@@ -7,11 +7,22 @@ const filters = [
   { value: 'concluidas', label: 'Concluídas' },
 ]
 
+const priorityLabels = {
+  LOW: 'Baixa',
+  MEDIUM: 'Média',
+  HIGH: 'Alta',
+}
+
 function App() {
   const [tasks, setTasks] = useState([])
   const [activeFilter, setActiveFilter] = useState('todas')
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [newTask, setNewTask] = useState({ titulo: '', descricao: '' })
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    priority: 'MEDIUM',
+    estimatedMinutes: '',
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -33,20 +44,20 @@ function App() {
   }, [])
 
   const visibleTasks = useMemo(() => {
-    if (activeFilter === 'pendentes') return tasks.filter((task) => !task.concluida)
-    if (activeFilter === 'concluidas') return tasks.filter((task) => task.concluida)
+    if (activeFilter === 'pendentes') return tasks.filter((task) => !task.completed)
+    if (activeFilter === 'concluidas') return tasks.filter((task) => task.completed)
     return tasks
   }, [activeFilter, tasks])
 
-  const completedTasks = tasks.filter((task) => task.concluida).length
+  const completedTasks = tasks.filter((task) => task.completed).length
   const pendingTasks = tasks.length - completedTasks
 
   async function toggleTask(task) {
-    const updatedTask = { ...task, concluida: !task.concluida }
+    const updatedTask = { ...task, completed: !task.completed }
 
     try {
-      const response = await fetch(`/tasks/${task.id}`, {
-        method: 'PUT',
+      const response = await fetch('/tasks', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedTask),
       })
@@ -63,8 +74,8 @@ function App() {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const titulo = newTask.titulo.trim()
-    if (!titulo) return
+    const title = newTask.title.trim()
+    if (!title) return
 
     setIsSaving(true)
     try {
@@ -72,15 +83,23 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          titulo,
-          descricao: newTask.descricao.trim(),
-          concluida: false,
+          title,
+          description: newTask.description.trim(),
+          completed: false,
+          priority: newTask.priority || 'MEDIUM',
+          estimatedMinutes: Number(newTask.estimatedMinutes) || 0,
+          spentMinutes: 0,
         }),
       })
       if (!response.ok) throw new Error('Não foi possível criar a task.')
       const savedTask = await response.json()
       setTasks((currentTasks) => [savedTask, ...currentTasks])
-      setNewTask({ titulo: '', descricao: '' })
+      setNewTask({
+        title: '',
+        description: '',
+        priority: 'MEDIUM',
+        estimatedMinutes: '',
+      })
       setIsFormOpen(false)
       setError('')
     } catch (requestError) {
@@ -176,24 +195,30 @@ function App() {
             {isLoading ? (
               <div className="empty-state"><p>Carregando tasks...</p></div>
             ) : visibleTasks.length ? visibleTasks.map((task) => (
-              <article className={task.concluida ? 'task-card completed' : 'task-card'} key={task.id}>
+              <article className={task.completed ? 'task-card completed' : 'task-card'} key={task.id}>
                 <button
                   className="check-button"
                   type="button"
-                  aria-label={task.concluida ? `Reabrir ${task.titulo}` : `Concluir ${task.titulo}`}
+                  aria-label={task.completed ? `Reabrir ${task.title}` : `Concluir ${task.title}`}
                   onClick={() => toggleTask(task)}
                 >
-                  {task.concluida ? '✓' : ''}
+                  {task.completed ? '✓' : ''}
                 </button>
                 <div className="task-info">
                   <div className="task-title-row">
-                    <h3>{task.titulo}</h3>
-                    <span className="priority média">Task</span>
+                    <h3>{task.title}</h3>
+                    <span className={`priority ${(task.priority || 'MEDIUM').toLowerCase()}`}>
+                      {priorityLabels[task.priority] || 'Média'}
+                    </span>
                   </div>
-                  <p>{task.descricao}</p>
-                  <span className="due-date">◷ Sem prazo</span>
+                  {task.description && <p>{task.description}</p>}
+                  <span className="due-date">
+                    {task.estimatedMinutes > 0
+                      ? `◷ ${task.estimatedMinutes} min${task.spentMinutes > 0 ? ` (${task.spentMinutes} min gastos)` : ''}`
+                      : '◷ Sem estimativa'}
+                  </span>
                 </div>
-                <button className="more-button" type="button" aria-label={`Mais opções para ${task.titulo}`}>•••</button>
+                <button className="more-button" type="button" aria-label={`Mais opções para ${task.title}`}>•••</button>
               </article>
             )) : (
               <div className="empty-state">
@@ -214,9 +239,46 @@ function App() {
               <button type="button" className="close-button" onClick={() => setIsFormOpen(false)} aria-label="Fechar">×</button>
             </div>
             <label htmlFor="title">Título</label>
-            <input id="title" autoFocus value={newTask.titulo} onChange={(event) => setNewTask({ ...newTask, titulo: event.target.value })} placeholder="Ex.: Preparar apresentação" />
+            <input
+              id="title"
+              autoFocus
+              value={newTask.title}
+              onChange={(event) => setNewTask({ ...newTask, title: event.target.value })}
+              placeholder="Ex.: Preparar apresentação"
+            />
             <label htmlFor="description">Descrição <span>(opcional)</span></label>
-            <textarea id="description" rows="3" value={newTask.descricao} onChange={(event) => setNewTask({ ...newTask, descricao: event.target.value })} placeholder="Adicione mais detalhes..." />
+            <textarea
+              id="description"
+              rows="3"
+              value={newTask.description}
+              onChange={(event) => setNewTask({ ...newTask, description: event.target.value })}
+              placeholder="Adicione mais detalhes..."
+            />
+            <div className="form-row">
+              <div>
+                <label htmlFor="priority">Prioridade</label>
+                <select
+                  id="priority"
+                  value={newTask.priority}
+                  onChange={(event) => setNewTask({ ...newTask, priority: event.target.value })}
+                >
+                  <option value="LOW">Baixa</option>
+                  <option value="MEDIUM">Média</option>
+                  <option value="HIGH">Alta</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="estimatedMinutes">Estimativa <span>(minutos)</span></label>
+                <input
+                  id="estimatedMinutes"
+                  type="number"
+                  min="0"
+                  value={newTask.estimatedMinutes}
+                  onChange={(event) => setNewTask({ ...newTask, estimatedMinutes: event.target.value })}
+                  placeholder="Ex.: 30"
+                />
+              </div>
+            </div>
             <button className="primary-button form-submit" type="submit" disabled={isSaving}>
               {isSaving ? 'Salvando...' : 'Adicionar task'}
             </button>
