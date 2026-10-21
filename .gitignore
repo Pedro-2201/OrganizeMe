@@ -4,3 +4,5 @@ backend/PROJECT_STATUS_AND_ROADMAP.md
 # AI agent configs
 .agent/
 .gemini/
+.vscode/settings.json
+backend/GUIA_ETAPA_2_DETALHADA.md
