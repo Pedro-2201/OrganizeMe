@@ -47,7 +47,15 @@ function Sidebar({ activePage, onNavigate }) {
             <span>Meu espaço</span>
           </div>
         </div>
-        <button className="logout-button" type="button" aria-label="Sair">↪</button>
+        <button
+          className="logout-button"
+          type="button"
+          aria-label="Sair"
+          title="Sair da conta"
+          onClick={() => onNavigate('login')}
+        >
+          ↪
+        </button>
       </div>
     </aside>
   )
