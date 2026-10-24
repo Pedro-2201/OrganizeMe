@@ -195,7 +195,7 @@ function LoginPage({ onLogin, onNavigate }) {
               href="#cadastro"
               onClick={(e) => {
                 e.preventDefault()
-                alert('Em breve: página de cadastro.')
+                if (onNavigate) onNavigate('register')
               }}
             >
               Cadastre-se
@@ -215,3 +215,4 @@ function LoginPage({ onLogin, onNavigate }) {
 }
 
 export default LoginPage
+
