@@ -30,8 +30,11 @@ function getTodayFormatted() {
 function App() {
   const [activePage, setActivePage] = useState(getInitialPage)
   const [tasks, setTasks] = useState([])
+  const [goals, setGoals] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingGoals, setIsLoadingGoals] = useState(true)
   const [error, setError] = useState('')
+  const [goalsError, setGoalsError] = useState('')
 
   const todayDate = getTodayFormatted()
 
@@ -58,6 +61,22 @@ function App() {
     }
 
     loadTasks()
+  }, [])
+
+  useEffect(() => {
+    async function loadGoals() {
+      try {
+        const response = await fetch('/goals')
+        if (!response.ok) throw new Error('Não foi possível carregar os objetivos.')
+        setGoals(await response.json())
+      } catch (requestError) {
+        setGoalsError(requestError.message)
+      } finally {
+        setIsLoadingGoals(false)
+      }
+    }
+
+    loadGoals()
   }, [])
 
   function handleNavigate(page) {
@@ -103,6 +122,37 @@ function App() {
     const savedTask = await response.json()
     setTasks((currentTasks) => [savedTask, ...currentTasks])
     setError('')
+  }
+
+  async function handleCreateGoal(goalData) {
+    const response = await fetch('/goals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(goalData),
+    })
+
+    if (!response.ok) throw new Error('Não foi possível criar o objetivo.')
+    const savedGoal = await response.json()
+    setGoals((current) => [savedGoal, ...current])
+    setGoalsError('')
+  }
+
+  async function handleToggleGoal(goal) {
+    const updatedGoal = { ...goal, completed: !goal.completed }
+
+    try {
+      const response = await fetch('/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedGoal),
+      })
+      if (!response.ok) throw new Error('Não foi possível atualizar o objetivo.')
+      const savedGoal = await response.json()
+      setGoals((current) => current.map((item) => (item.id === savedGoal.id ? savedGoal : item)))
+      setGoalsError('')
+    } catch (requestError) {
+      setGoalsError(requestError.message)
+    }
   }
 
   if (activePage === 'login') {
@@ -159,8 +209,12 @@ function App() {
 
       {activePage === 'goals' && (
         <GoalsPage
+          goals={goals}
+          isLoading={isLoadingGoals}
+          error={goalsError}
+          onCreateGoal={handleCreateGoal}
+          onToggleGoal={handleToggleGoal}
           todayDate={todayDate}
-          onNavigate={handleNavigate}
         />
       )}
     </div>
