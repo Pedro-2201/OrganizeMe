@@ -7,6 +7,8 @@ import GoalsPage from './pages/GoalsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 function getInitialPage() {
   const hash = window.location.hash
   if (hash === '#tasks') return 'tasks'
@@ -17,18 +19,39 @@ function getInitialPage() {
 }
 
 function getTodayFormatted() {
-  const date = new Date()
-  return date
-    .toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-    })
+  return new Date()
+    .toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
     .toUpperCase()
 }
 
+// Lê o token salvo no localStorage
+function getStoredToken() {
+  return localStorage.getItem('organizeme_token')
+}
+
+// Lê os dados do usuário salvos no localStorage
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('organizeme_user')) || null
+  } catch {
+    return null
+  }
+}
+
+// Cria o header Authorization com o token Bearer para todas as chamadas autenticadas
+function authHeaders() {
+  const token = getStoredToken()
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
 function App() {
   const [activePage, setActivePage] = useState(getInitialPage)
+  const [user, setUser] = useState(getStoredUser)   // { name, email } do usuário logado
   const [tasks, setTasks] = useState([])
   const [goals, setGoals] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -37,20 +60,27 @@ function App() {
   const [goalsError, setGoalsError] = useState('')
 
   const todayDate = getTodayFormatted()
+  const isAuthenticated = Boolean(getStoredToken())
 
+  // Sincroniza a página com a hash da URL
   useEffect(() => {
     function handleHashChange() {
       setActivePage(getInitialPage())
     }
-
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
+  // Carrega tasks quando autenticado
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      return
+    }
     async function loadTasks() {
       try {
-        const response = await fetch('/tasks')
+        const response = await fetch('/tasks', { headers: authHeaders() })
+        if (response.status === 401) { handleLogout(); return }
         if (!response.ok) throw new Error('Não foi possível carregar as tasks.')
         setTasks(await response.json())
       } catch (requestError) {
@@ -59,14 +89,19 @@ function App() {
         setIsLoading(false)
       }
     }
-
     loadTasks()
-  }, [])
+  }, [isAuthenticated])
 
+  // Carrega goals quando autenticado
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoadingGoals(false)
+      return
+    }
     async function loadGoals() {
       try {
-        const response = await fetch('/goals')
+        const response = await fetch('/goals', { headers: authHeaders() })
+        if (response.status === 401) { handleLogout(); return }
         if (!response.ok) throw new Error('Não foi possível carregar os objetivos.')
         setGoals(await response.json())
       } catch (requestError) {
@@ -75,9 +110,10 @@ function App() {
         setIsLoadingGoals(false)
       }
     }
-
     loadGoals()
-  }, [])
+  }, [isAuthenticated])
+
+  // ─── Navegação ───────────────────────────────────────────────────────────
 
   function handleNavigate(page) {
     setActivePage(page)
@@ -91,20 +127,72 @@ function App() {
     window.location.hash = hashMap[page] || '#inicio'
   }
 
+  // ─── Auth ────────────────────────────────────────────────────────────────
+
+  // Chama POST /auth/login, salva token e dados do usuário no localStorage
+  async function handleLogin(credentials) {
+    const response = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.message || 'Email ou senha incorretos.')
+    }
+
+    const data = await response.json()
+    localStorage.setItem('organizeme_token', data.token)
+    localStorage.setItem('organizeme_user', JSON.stringify({ name: data.name, email: data.email }))
+    setUser({ name: data.name, email: data.email })
+    handleNavigate('home')
+  }
+
+  // Chama POST /auth/register, salva token e dados do usuário no localStorage
+  async function handleRegister(userData) {
+    const response = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: userData.name, email: userData.email, password: userData.password }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.message || 'Não foi possível criar a conta. Tente novamente.')
+    }
+
+    const data = await response.json()
+    localStorage.setItem('organizeme_token', data.token)
+    localStorage.setItem('organizeme_user', JSON.stringify({ name: data.name, email: data.email }))
+    setUser({ name: data.name, email: data.email })
+    handleNavigate('home')
+  }
+
+  // Remove token e dados do usuário, redireciona para login
+  function handleLogout() {
+    localStorage.removeItem('organizeme_token')
+    localStorage.removeItem('organizeme_user')
+    setUser(null)
+    setTasks([])
+    setGoals([])
+    handleNavigate('login')
+  }
+
+  // ─── Tasks ───────────────────────────────────────────────────────────────
+
   async function handleToggleTask(task) {
     const updatedTask = { ...task, completed: !task.completed }
-
     try {
       const response = await fetch('/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(updatedTask),
       })
+      if (response.status === 401) { handleLogout(); return }
       if (!response.ok) throw new Error('Não foi possível atualizar a task.')
       const savedTask = await response.json()
-      setTasks((currentTasks) =>
-        currentTasks.map((item) => (item.id === savedTask.id ? savedTask : item)),
-      )
+      setTasks((current) => current.map((item) => (item.id === savedTask.id ? savedTask : item)))
       setError('')
     } catch (requestError) {
       setError(requestError.message)
@@ -114,23 +202,25 @@ function App() {
   async function handleCreateTask(taskData) {
     const response = await fetch('/tasks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(taskData),
     })
-
+    if (response.status === 401) { handleLogout(); return }
     if (!response.ok) throw new Error('Não foi possível criar a task.')
     const savedTask = await response.json()
-    setTasks((currentTasks) => [savedTask, ...currentTasks])
+    setTasks((current) => [savedTask, ...current])
     setError('')
   }
+
+  // ─── Goals ───────────────────────────────────────────────────────────────
 
   async function handleCreateGoal(goalData) {
     const response = await fetch('/goals', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(goalData),
     })
-
+    if (response.status === 401) { handleLogout(); return }
     if (!response.ok) throw new Error('Não foi possível criar o objetivo.')
     const savedGoal = await response.json()
     setGoals((current) => [savedGoal, ...current])
@@ -139,13 +229,13 @@ function App() {
 
   async function handleToggleGoal(goal) {
     const updatedGoal = { ...goal, completed: !goal.completed }
-
     try {
       const response = await fetch('/goals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(updatedGoal),
       })
+      if (response.status === 401) { handleLogout(); return }
       if (!response.ok) throw new Error('Não foi possível atualizar o objetivo.')
       const savedGoal = await response.json()
       setGoals((current) => current.map((item) => (item.id === savedGoal.id ? savedGoal : item)))
@@ -155,35 +245,24 @@ function App() {
     }
   }
 
+  // ─── Render ──────────────────────────────────────────────────────────────
+
   if (activePage === 'login') {
-    return (
-      <LoginPage
-        onNavigate={handleNavigate}
-        onLogin={async (credentials) => {
-          // Mock de sucesso na autenticação
-          await new Promise((resolve) => setTimeout(resolve, 500))
-          handleNavigate('home')
-        }}
-      />
-    )
+    return <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
   }
 
   if (activePage === 'register') {
-    return (
-      <RegisterPage
-        onNavigate={handleNavigate}
-        onRegister={async (userData) => {
-          // Mock de sucesso no cadastro
-          await new Promise((resolve) => setTimeout(resolve, 500))
-          handleNavigate('home')
-        }}
-      />
-    )
+    return <RegisterPage onNavigate={handleNavigate} onRegister={handleRegister} />
+  }
+
+  // Redireciona para login se não autenticado ao tentar acessar páginas protegidas
+  if (!isAuthenticated) {
+    return <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
   }
 
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} onNavigate={handleNavigate} />
+      <Sidebar activePage={activePage} onNavigate={handleNavigate} user={user} onLogout={handleLogout} />
 
       {activePage === 'home' && (
         <HomePage
