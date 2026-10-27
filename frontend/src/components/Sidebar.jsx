@@ -1,4 +1,14 @@
-function Sidebar({ activePage, onNavigate }) {
+function Sidebar({ activePage, onNavigate, user, onLogout }) {
+  // Gera as iniciais do nome do usuário para o avatar (ex: "Pedro Xavier" → "PX")
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .slice(0, 2)
+        .map((word) => word[0])
+        .join('')
+        .toUpperCase()
+    : '?'
+
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -41,18 +51,18 @@ function Sidebar({ activePage, onNavigate }) {
 
       <div className="sidebar-footer">
         <div className="profile">
-          <div className="avatar">PC</div>
+          <div className="avatar">{initials}</div>
           <div>
-            <strong>Teste User</strong>
-            <span>Meu espaço</span>
+            <strong>{user?.name ?? 'Usuário'}</strong>
+            <span>{user?.email ?? ''}</span>
           </div>
         </div>
         <button
           className="logout-button"
           type="button"
-          aria-label="Sair"
+          aria-label="Sair da conta"
           title="Sair da conta"
-          onClick={() => onNavigate('login')}
+          onClick={onLogout}
         >
           ↪
         </button>
@@ -62,4 +72,3 @@ function Sidebar({ activePage, onNavigate }) {
 }
 
 export default Sidebar
-
