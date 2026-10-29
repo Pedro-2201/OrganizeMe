@@ -1,11 +1,12 @@
 package com.pedro_2201.organizeme_api.goal.service;
 
-
+import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
 import com.pedro_2201.organizeme_api.goal.repository.GoalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -13,18 +14,27 @@ import java.util.List;
 public class GoalService {
 
     @Autowired
-    private GoalRepository goalRepository; //Injeta o repositório para usar os métodos de acesso a dados
+    private GoalRepository goalRepository; // Injeta o repositório para usar os métodos de acesso a dados
 
-    public List<Goal> getAllGoals(){
-        return goalRepository.findAll(); //Chama o metodo do repositório para buscar todos os organizes
+    // Busca todas as metas pertencentes exclusivamente ao usuário autenticado
+    public List<Goal> getAllGoals(User user) {
+        return goalRepository.findByUser(user);
     }
 
-    public Goal getGoalById(@RequestParam Long id) {
-        return goalRepository.getReferenceById(id); //Chama o metodo do repositório para buscar uma goal por ID
+    // Busca uma meta específica garantindo que ela pertence ao usuário autenticado
+    public Goal getGoalById(Long id, User user) {
+        return goalRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meta não encontrada com o ID: " + id));
     }
 
-    public Goal createGoal(Goal goal){
-        return goalRepository.saveAndFlush(goal); //Chama o metodo do repositorio para salvar uma goal
+    // Cria ou atualiza uma meta associando-a obrigatoriamente ao usuário autenticado
+    public Goal createGoal(Goal goal, User user) {
+        // Se for atualização de meta existente, valida se ela realmente pertence ao usuário logado
+        if (goal.getId() != null) {
+            Goal existingGoal = getGoalById(goal.getId(), user);
+            goal.setCreatedAt(existingGoal.getCreatedAt()); // Preserva a data de criação original
+        }
+        goal.setUser(user); // Vincula o usuário logado como proprietário da meta
+        return goalRepository.saveAndFlush(goal); // Salva e persiste a meta no banco de dados
     }
-
 }
