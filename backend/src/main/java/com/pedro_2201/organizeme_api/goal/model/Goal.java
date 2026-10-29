@@ -1,5 +1,7 @@
 package com.pedro_2201.organizeme_api.goal.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.pedro_2201.organizeme_api.auth.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -31,6 +33,11 @@ public class Goal {
 
     @Builder.Default // Garante que o valor padrão seja respeitado ao utilizar o Builder
     private boolean completed = false; // Campo para indicar se a meta foi concluída
+
+    @ManyToOne(fetch = FetchType.LAZY) // Relacionamento Muitos-para-Um: muitas metas pertencem a um único usuário
+    @JoinColumn(name = "user_id", nullable = false) // Chave estrangeira para a tabela users (campo obrigatório)
+    @JsonIgnoreProperties({"password", "authorities", "goals", "hibernateLazyInitializer", "handler"}) // Evita expor dados sensíveis e loops na serialização
+    private User user; // Usuário proprietário da meta
 
     @CreationTimestamp // Preenche automaticamente a data/hora no momento da criação (INSERT)
     @Column(updatable = false) // Impede a alteração da data de criação em atualizações posteriores
