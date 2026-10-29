@@ -1,8 +1,10 @@
 package com.pedro_2201.organizeme_api.goal.controller;
 
+import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
 import com.pedro_2201.organizeme_api.goal.service.GoalService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,20 +14,20 @@ import java.util.List;
 public class GoalController {
 
     @Autowired
-    private GoalService goalService; //Injeta o serviço para usar os métodos de negócio
+    private GoalService goalService; // Injeta o serviço para usar os métodos de negócio
 
-    @GetMapping//Define o endpoint GET /goals
-    public List<Goal> listar() {
-        return goalService.getAllGoals(); //Chama o métodoo do serviço para buscar todas as goals
+    @GetMapping // Define o endpoint GET /goals - lista as metas do usuário autenticado
+    public List<Goal> listar(@AuthenticationPrincipal User user) {
+        return goalService.getAllGoals(user);
     }
 
-    @GetMapping("/{id}")
-    public Goal buscarPorId(@PathVariable Long id) {
-        return goalService.getGoalById(id); //Chama o métodoo do serviço para buscar uma goal por ID
+    @GetMapping("/{id}") // Define o endpoint GET /goals/{id} - busca uma meta por ID do usuário autenticado
+    public Goal buscarPorId(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return goalService.getGoalById(id, user);
     }
 
-    @PostMapping
-    public Goal salvar(@RequestBody Goal goal) {
-        return goalService.createGoal(goal); //Chama o métodoo do serviço para criar uma nova goal
+    @PostMapping // Define o endpoint POST /goals - cria ou atualiza uma meta para o usuário autenticado
+    public Goal salvar(@RequestBody Goal goal, @AuthenticationPrincipal User user) {
+        return goalService.createGoal(goal, user);
     }
 }
