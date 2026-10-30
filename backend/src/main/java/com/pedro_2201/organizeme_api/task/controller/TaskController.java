@@ -4,6 +4,7 @@ import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.task.model.Task;
 import com.pedro_2201.organizeme_api.task.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,5 +30,11 @@ public class TaskController {
     @PostMapping // Define o endpoint POST /tasks - cria ou atualiza tarefa do usuário logado
     public Task salvar(@RequestBody Task task, @AuthenticationPrincipal User user) {
         return taskService.createTask(task, user);
+    }
+
+    @DeleteMapping("/{id}") // Define o endpoint DELETE /tasks/{id} - exclui tarefa do usuário logado
+    public ResponseEntity<Void> deletar(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        taskService.deleteTask(id, user);
+        return ResponseEntity.noContent().build();
     }
 }
