@@ -51,4 +51,10 @@ public class TaskService {
         task.setUser(user); // Garante que a tarefa pertence ao usuário autenticado
         return taskRepository.saveAndFlush(task); // Salva e persiste no banco de dados
     }
+
+    // Remove uma tarefa garantindo que pertence ao usuário autenticado
+    public void deleteTask(Long id, User user) {
+        Task existingTask = getTaskById(id, user);
+        taskRepository.delete(existingTask);
+    }
 }
