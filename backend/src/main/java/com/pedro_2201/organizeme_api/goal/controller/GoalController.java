@@ -4,6 +4,7 @@ import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
 import com.pedro_2201.organizeme_api.goal.service.GoalService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,5 +30,11 @@ public class GoalController {
     @PostMapping // Define o endpoint POST /goals - cria ou atualiza uma meta para o usuário autenticado
     public Goal salvar(@RequestBody Goal goal, @AuthenticationPrincipal User user) {
         return goalService.createGoal(goal, user);
+    }
+
+    @DeleteMapping("/{id}") // Define o endpoint DELETE /goals/{id} - exclui meta do usuário autenticado
+    public ResponseEntity<Void> deletar(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        goalService.deleteGoal(id, user);
+        return ResponseEntity.noContent().build();
     }
 }
