@@ -51,16 +51,16 @@ function authHeaders() {
 
 function App() {
   const [activePage, setActivePage] = useState(getInitialPage)
-  const [user, setUser] = useState(getStoredUser)   // { name, email } do usuário logado
+  const [user, setUser] = useState(getStoredUser) // { name, email } do usuário logado
   const [tasks, setTasks] = useState([])
   const [goals, setGoals] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingGoals, setIsLoadingGoals] = useState(true)
+  const [isLoading, setIsLoading] = useState(() => Boolean(getStoredToken() && getStoredUser()))
+  const [isLoadingGoals, setIsLoadingGoals] = useState(() => Boolean(getStoredToken() && getStoredUser()))
   const [error, setError] = useState('')
   const [goalsError, setGoalsError] = useState('')
 
   const todayDate = getTodayFormatted()
-  const isAuthenticated = Boolean(getStoredToken())
+  const isAuthenticated = Boolean(getStoredToken() && user)
 
   // Sincroniza a página com a hash da URL
   useEffect(() => {
@@ -71,18 +71,43 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
+  // Valida o token atual ao iniciar a aplicação
+  useEffect(() => {
+    const token = getStoredToken()
+    if (!token) return
+    async function verifySession() {
+      try {
+        const response = await fetch('/auth/me', { headers: authHeaders() })
+        if (response.status === 401 || response.status === 403) {
+          handleLogout()
+          return
+        }
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+          localStorage.setItem('organizeme_user', JSON.stringify(userData))
+        }
+      } catch {
+        // Caso o servidor esteja temporariamente indisponível, mantém dados locais
+      }
+    }
+    verifySession()
+  }, [])
+
   // Carrega tasks quando autenticado
   useEffect(() => {
-    if (!isAuthenticated) {
-      setIsLoading(false)
-      return
-    }
+    if (!isAuthenticated) return
     async function loadTasks() {
+      setIsLoading(true)
       try {
         const response = await fetch('/tasks', { headers: authHeaders() })
-        if (response.status === 401) { handleLogout(); return }
+        if (response.status === 401 || response.status === 403) {
+          handleLogout()
+          return
+        }
         if (!response.ok) throw new Error('Não foi possível carregar as tasks.')
         setTasks(await response.json())
+        setError('')
       } catch (requestError) {
         setError(requestError.message)
       } finally {
@@ -90,20 +115,22 @@ function App() {
       }
     }
     loadTasks()
-  }, [isAuthenticated])
+  }, [isAuthenticated, user?.email])
 
   // Carrega goals quando autenticado
   useEffect(() => {
-    if (!isAuthenticated) {
-      setIsLoadingGoals(false)
-      return
-    }
+    if (!isAuthenticated) return
     async function loadGoals() {
+      setIsLoadingGoals(true)
       try {
         const response = await fetch('/goals', { headers: authHeaders() })
-        if (response.status === 401) { handleLogout(); return }
+        if (response.status === 401 || response.status === 403) {
+          handleLogout()
+          return
+        }
         if (!response.ok) throw new Error('Não foi possível carregar os objetivos.')
         setGoals(await response.json())
+        setGoalsError('')
       } catch (requestError) {
         setGoalsError(requestError.message)
       } finally {
@@ -111,7 +138,7 @@ function App() {
       }
     }
     loadGoals()
-  }, [isAuthenticated])
+  }, [isAuthenticated, user?.email])
 
   // ─── Navegação ───────────────────────────────────────────────────────────
 
@@ -176,6 +203,8 @@ function App() {
     setUser(null)
     setTasks([])
     setGoals([])
+    setIsLoading(false)
+    setIsLoadingGoals(false)
     handleNavigate('login')
   }
 
@@ -189,7 +218,10 @@ function App() {
         headers: authHeaders(),
         body: JSON.stringify(updatedTask),
       })
-      if (response.status === 401) { handleLogout(); return }
+      if (response.status === 401 || response.status === 403) {
+        handleLogout()
+        return
+      }
       if (!response.ok) throw new Error('Não foi possível atualizar a task.')
       const savedTask = await response.json()
       setTasks((current) => current.map((item) => (item.id === savedTask.id ? savedTask : item)))
@@ -199,31 +231,65 @@ function App() {
     }
   }
 
-  async function handleCreateTask(taskData) {
+  async function handleSaveTask(taskData) {
     const response = await fetch('/tasks', {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(taskData),
     })
-    if (response.status === 401) { handleLogout(); return }
-    if (!response.ok) throw new Error('Não foi possível criar a task.')
+    if (response.status === 401 || response.status === 403) {
+      handleLogout()
+      return
+    }
+    if (!response.ok) throw new Error('Não foi possível salvar a task.')
     const savedTask = await response.json()
-    setTasks((current) => [savedTask, ...current])
+    setTasks((current) => {
+      const exists = current.some((item) => item.id === savedTask.id)
+      return exists
+        ? current.map((item) => (item.id === savedTask.id ? savedTask : item))
+        : [savedTask, ...current]
+    })
     setError('')
+  }
+
+  async function handleDeleteTask(taskId) {
+    try {
+      const response = await fetch(`/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (response.status === 401 || response.status === 403) {
+        handleLogout()
+        return
+      }
+      if (!response.ok) throw new Error('Não foi possível excluir a task.')
+      setTasks((current) => current.filter((item) => item.id !== taskId))
+      setError('')
+    } catch (requestError) {
+      setError(requestError.message)
+    }
   }
 
   // ─── Goals ───────────────────────────────────────────────────────────────
 
-  async function handleCreateGoal(goalData) {
+  async function handleSaveGoal(goalData) {
     const response = await fetch('/goals', {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(goalData),
     })
-    if (response.status === 401) { handleLogout(); return }
-    if (!response.ok) throw new Error('Não foi possível criar o objetivo.')
+    if (response.status === 401 || response.status === 403) {
+      handleLogout()
+      return
+    }
+    if (!response.ok) throw new Error('Não foi possível salvar o objetivo.')
     const savedGoal = await response.json()
-    setGoals((current) => [savedGoal, ...current])
+    setGoals((current) => {
+      const exists = current.some((item) => item.id === savedGoal.id)
+      return exists
+        ? current.map((item) => (item.id === savedGoal.id ? savedGoal : item))
+        : [savedGoal, ...current]
+    })
     setGoalsError('')
   }
 
@@ -235,10 +301,35 @@ function App() {
         headers: authHeaders(),
         body: JSON.stringify(updatedGoal),
       })
-      if (response.status === 401) { handleLogout(); return }
+      if (response.status === 401 || response.status === 403) {
+        handleLogout()
+        return
+      }
       if (!response.ok) throw new Error('Não foi possível atualizar o objetivo.')
       const savedGoal = await response.json()
       setGoals((current) => current.map((item) => (item.id === savedGoal.id ? savedGoal : item)))
+      setGoalsError('')
+    } catch (requestError) {
+      setGoalsError(requestError.message)
+    }
+  }
+
+  async function handleDeleteGoal(goalId) {
+    try {
+      const response = await fetch(`/goals/${goalId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (response.status === 401 || response.status === 403) {
+        handleLogout()
+        return
+      }
+      if (!response.ok) throw new Error('Não foi possível excluir o objetivo.')
+      setGoals((current) => current.filter((item) => item.id !== goalId))
+      // Desvincula nas tasks carregadas localmente
+      setTasks((current) =>
+        current.map((t) => (t.goal?.id === goalId ? { ...t, goal: null } : t))
+      )
       setGoalsError('')
     } catch (requestError) {
       setGoalsError(requestError.message)
@@ -262,14 +353,24 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} onNavigate={handleNavigate} user={user} onLogout={handleLogout} />
+      <Sidebar
+        activePage={activePage}
+        onNavigate={handleNavigate}
+        user={user}
+        onLogout={handleLogout}
+        pendingTasksCount={tasks.filter((t) => !t.completed).length}
+        activeGoalsCount={goals.filter((g) => !g.completed).length}
+      />
 
       {activePage === 'home' && (
         <HomePage
+          user={user}
           tasks={tasks}
+          goals={goals}
           isLoading={isLoading}
           error={error}
           onToggleTask={handleToggleTask}
+          onDeleteTask={handleDeleteTask}
           onNavigate={handleNavigate}
           todayDate={todayDate}
         />
@@ -278,10 +379,12 @@ function App() {
       {activePage === 'tasks' && (
         <TasksPage
           tasks={tasks}
+          goals={goals}
           isLoading={isLoading}
           error={error}
           onToggleTask={handleToggleTask}
-          onCreateTask={handleCreateTask}
+          onCreateTask={handleSaveTask}
+          onDeleteTask={handleDeleteTask}
           todayDate={todayDate}
         />
       )}
@@ -289,10 +392,12 @@ function App() {
       {activePage === 'goals' && (
         <GoalsPage
           goals={goals}
+          tasks={tasks}
           isLoading={isLoadingGoals}
           error={goalsError}
-          onCreateGoal={handleCreateGoal}
+          onCreateGoal={handleSaveGoal}
           onToggleGoal={handleToggleGoal}
+          onDeleteGoal={handleDeleteGoal}
           todayDate={todayDate}
         />
       )}
