@@ -2,6 +2,7 @@ package com.pedro_2201.organizeme_api.auth.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
+import com.pedro_2201.organizeme_api.task.model.Task;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -43,6 +44,11 @@ public class User implements UserDetails {
     @JsonIgnore // Evita loops infinitos de recursão durante a serialização JSON
     @Builder.Default
     private List<Goal> goals = new ArrayList<>(); // Lista de metas pertencentes ao usuário
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true) // Relacionamento Um-para-Muitos: um usuário possui várias tarefas
+    @JsonIgnore // Evita loops infinitos de recursão durante a serialização JSON
+    @Builder.Default
+    private List<Task> tasks = new ArrayList<>(); // Lista de tarefas pertencentes ao usuário
 
     // UserDetails interface methods
 
