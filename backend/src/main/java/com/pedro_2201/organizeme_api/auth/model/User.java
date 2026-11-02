@@ -1,5 +1,7 @@
 package com.pedro_2201.organizeme_api.auth.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.pedro_2201.organizeme_api.goal.model.Goal;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -7,6 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,6 +38,11 @@ public class User implements UserDetails {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true) // Relacionamento Um-para-Muitos: um usuário possui várias metas
+    @JsonIgnore // Evita loops infinitos de recursão durante a serialização JSON
+    @Builder.Default
+    private List<Goal> goals = new ArrayList<>(); // Lista de metas pertencentes ao usuário
 
     // UserDetails interface methods
 
@@ -68,4 +76,3 @@ public class User implements UserDetails {
         return true;
     }
 }
-
