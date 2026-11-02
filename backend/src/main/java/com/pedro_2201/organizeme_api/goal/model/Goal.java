@@ -2,6 +2,7 @@ package com.pedro_2201.organizeme_api.goal.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.pedro_2201.organizeme_api.auth.model.User;
+import com.pedro_2201.organizeme_api.task.model.Task;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,6 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity // Informa que a classe representa uma tabela no banco de dados
 @Table(name = "goals") // Define o nome da tabela no banco de dados
@@ -34,10 +37,19 @@ public class Goal {
     @Builder.Default // Garante que o valor padrão seja respeitado ao utilizar o Builder
     private boolean completed = false; // Campo para indicar se a meta foi concluída
 
+    @Builder.Default // Define false como padrão para metas comuns criadas pelo usuário
+    @Column(nullable = false, columnDefinition = "boolean default false") // Identifica a meta padrão ("Tarefas avulsas" / Inbox) criada no registro
+    private boolean defaultGoal = false; // Indica se esta é a meta Inbox padrão do usuário
+
     @ManyToOne(fetch = FetchType.LAZY) // Relacionamento Muitos-para-Um: muitas metas pertencem a um único usuário
     @JoinColumn(name = "user_id", nullable = false) // Chave estrangeira para a tabela users (campo obrigatório)
     @JsonIgnoreProperties({"password", "authorities", "goals", "hibernateLazyInitializer", "handler"}) // Evita expor dados sensíveis e loops na serialização
     private User user; // Usuário proprietário da meta
+
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true) // Relacionamento Um-para-Muitos: uma meta agrega várias tarefas necessárias para atingi-la
+    @JsonIgnoreProperties({"goal", "hibernateLazyInitializer", "handler"}) // Evita loop infinito na serialização JSON mantendo a lista de tarefas na meta
+    @Builder.Default // Inicializa a lista vazia por padrão ao usar o Builder
+    private List<Task> tasks = new ArrayList<>(); // Lista de tarefas vinculadas a esta meta
 
     @CreationTimestamp // Preenche automaticamente a data/hora no momento da criação (INSERT)
     @Column(updatable = false) // Impede a alteração da data de criação em atualizações posteriores
@@ -45,4 +57,16 @@ public class Goal {
 
     @UpdateTimestamp // Atualiza automaticamente a data/hora a cada modificação (UPDATE)
     private LocalDateTime updatedAt; // Campo para armazenar a data e hora da última atualização da meta
+
+    // Método auxiliar para vincular uma tarefa à meta mantendo a consistência bidirecional
+    public void addTask(Task task) {
+        this.tasks.add(task);
+        task.setGoal(this);
+    }
+
+    // Método auxiliar para remover uma tarefa da meta mantendo a consistência bidirecional
+    public void removeTask(Task task) {
+        this.tasks.remove(task);
+        task.setGoal(null);
+    }
 }
