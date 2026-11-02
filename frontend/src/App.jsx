@@ -4,11 +4,15 @@ import Sidebar from './components/Sidebar'
 import HomePage from './pages/HomePage'
 import TasksPage from './pages/TasksPage'
 import GoalsPage from './pages/GoalsPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 
 function getInitialPage() {
   const hash = window.location.hash
   if (hash === '#tasks') return 'tasks'
   if (hash === '#objetivos') return 'goals'
+  if (hash === '#login') return 'login'
+  if (hash === '#cadastro') return 'register'
   return 'home'
 }
 
@@ -62,6 +66,8 @@ function App() {
       home: '#inicio',
       tasks: '#tasks',
       goals: '#objetivos',
+      login: '#login',
+      register: '#cadastro',
     }
     window.location.hash = hashMap[page] || '#inicio'
   }
@@ -97,6 +103,32 @@ function App() {
     const savedTask = await response.json()
     setTasks((currentTasks) => [savedTask, ...currentTasks])
     setError('')
+  }
+
+  if (activePage === 'login') {
+    return (
+      <LoginPage
+        onNavigate={handleNavigate}
+        onLogin={async (credentials) => {
+          // Mock de sucesso na autenticação
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          handleNavigate('home')
+        }}
+      />
+    )
+  }
+
+  if (activePage === 'register') {
+    return (
+      <RegisterPage
+        onNavigate={handleNavigate}
+        onRegister={async (userData) => {
+          // Mock de sucesso no cadastro
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          handleNavigate('home')
+        }}
+      />
+    )
   }
 
   return (
