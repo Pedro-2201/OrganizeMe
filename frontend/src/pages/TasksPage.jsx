@@ -75,7 +75,7 @@ function TasksPage({
       priority: task.priority || 'MEDIUM',
       estimatedMinutes: task.estimatedMinutes ? String(task.estimatedMinutes) : '',
       spentMinutes: task.spentMinutes ? String(task.spentMinutes) : '',
-      goalId: task.goal?.id ? String(task.goal.id) : '',
+      goalId: task.goal?.id && !task.goal?.defaultGoal ? String(task.goal.id) : '',
       completed: Boolean(task.completed),
     })
     setFormError('')
@@ -373,7 +373,7 @@ function TasksPage({
 
               <div>
                 <label htmlFor="goalId">
-                  Objetivo vinculado <span>(opcional)</span>
+                  Objetivo vinculado <span>(padrão: Tarefas avulsas)</span>
                 </label>
                 <select
                   id="goalId"
@@ -382,12 +382,14 @@ function TasksPage({
                     setTaskForm({ ...taskForm, goalId: event.target.value })
                   }
                 >
-                  <option value="">Sem vínculo</option>
-                  {goals.map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.title}
-                    </option>
-                  ))}
+                  <option value="">📥 Tarefas avulsas (Inbox padrão)</option>
+                  {goals
+                    .filter((goal) => !goal.defaultGoal)
+                    .map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        ◈ {goal.title}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>

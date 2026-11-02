@@ -6,12 +6,20 @@ const filters = [
   { value: 'concluidas', label: 'Concluídas' },
 ]
 
+const emptyTaskDraft = {
+  title: '',
+  priority: 'MEDIUM',
+  estimatedMinutes: '',
+}
+
 const emptyGoalState = {
   id: null,
   title: '',
   description: '',
   targetDate: '',
   completed: false,
+  defaultGoal: false,
+  newTasks: [{ ...emptyTaskDraft }],
 }
 
 function formatDate(dateStr) {
@@ -68,7 +76,10 @@ function GoalsPage({
   }, [activeFilter, searchQuery, goals])
 
   function openNewGoalModal() {
-    setGoalForm(emptyGoalState)
+    setGoalForm({
+      ...emptyGoalState,
+      newTasks: [{ ...emptyTaskDraft }],
+    })
     setFormError('')
     setIsFormOpen(true)
   }
@@ -80,15 +91,50 @@ function GoalsPage({
       description: goal.description || '',
       targetDate: goal.targetDate || '',
       completed: Boolean(goal.completed),
+      defaultGoal: Boolean(goal.defaultGoal),
+      newTasks: [],
     })
     setFormError('')
     setIsFormOpen(true)
+  }
+
+  function handleAddDraftTask() {
+    setGoalForm((prev) => ({
+      ...prev,
+      newTasks: [...prev.newTasks, { ...emptyTaskDraft }],
+    }))
+  }
+
+  function handleRemoveDraftTask(index) {
+    setGoalForm((prev) => ({
+      ...prev,
+      newTasks: prev.newTasks.filter((_, idx) => idx !== index),
+    }))
+  }
+
+  function handleChangeDraftTask(index, field, value) {
+    setGoalForm((prev) => ({
+      ...prev,
+      newTasks: prev.newTasks.map((item, idx) =>
+        idx === index ? { ...item, [field]: value } : item
+      ),
+    }))
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
     const title = goalForm.title.trim()
     if (!title) return
+
+    const preparedTasks = (goalForm.newTasks || [])
+      .filter((t) => t.title && t.title.trim())
+      .map((t) => ({
+        title: t.title.trim(),
+        priority: t.priority || 'MEDIUM',
+        estimatedMinutes: Number(t.estimatedMinutes) || 0,
+        spentMinutes: 0,
+        completed: false,
+      }))
 
     setIsSaving(true)
     setFormError('')
@@ -99,6 +145,7 @@ function GoalsPage({
         description: goalForm.description.trim(),
         targetDate: goalForm.targetDate || null,
         completed: goalForm.completed,
+        ...(preparedTasks.length > 0 ? { tasks: preparedTasks } : {}),
       })
       setGoalForm(emptyGoalState)
       setIsFormOpen(false)
@@ -245,6 +292,11 @@ function GoalsPage({
                   <div className="task-info">
                     <div className="task-title-row">
                       <h3>{goal.title}</h3>
+                      {goal.defaultGoal && (
+                        <span className="goal-tag" title="Meta padrão para tarefas avulsas">
+                          📥 Inbox padrão
+                        </span>
+                      )}
                       {goal.targetDate && (
                         <span
                           className={`priority ${
@@ -267,9 +319,11 @@ function GoalsPage({
                     {goal.description && <p>{goal.description}</p>}
                     <div className="task-meta-row">
                       <span className="due-date">
-                        {goal.targetDate
-                          ? `◷ Prazo final: ${formatDate(goal.targetDate)}`
-                          : '◷ Sem prazo definido'}
+                        {goal.defaultGoal
+                          ? '◷ Agrupa automaticamente suas tarefas avulsas'
+                          : goal.targetDate
+                            ? `◷ Prazo final: ${formatDate(goal.targetDate)}`
+                            : '◷ Sem prazo definido'}
                       </span>
                     </div>
                   </div>
@@ -284,7 +338,7 @@ function GoalsPage({
                     >
                       ✎
                     </button>
-                    {onDeleteGoal && (
+                    {onDeleteGoal && !goal.defaultGoal && (
                       <button
                         className="icon-action-btn danger"
                         type="button"
@@ -377,6 +431,75 @@ function GoalsPage({
                 setGoalForm({ ...goalForm, targetDate: event.target.value })
               }
             />
+
+            <div className="goal-tasks-builder">
+              <div className="goal-tasks-builder-header">
+                <label>
+                  Tasks para atingir este objetivo <span>(opcional)</span>
+                </label>
+                <button
+                  type="button"
+                  className="link-action-btn"
+                  onClick={handleAddDraftTask}
+                >
+                  + Adicionar task
+                </button>
+              </div>
+              {goalForm.newTasks.length > 0 ? (
+                <div className="goal-tasks-draft-list">
+                  {goalForm.newTasks.map((draft, idx) => (
+                    <div className="goal-task-draft-row" key={idx}>
+                      <input
+                        type="text"
+                        placeholder={`Título da task #${idx + 1}`}
+                        value={draft.title}
+                        onChange={(e) =>
+                          handleChangeDraftTask(idx, 'title', e.target.value)
+                        }
+                      />
+                      <select
+                        value={draft.priority}
+                        aria-label="Prioridade da task"
+                        onChange={(e) =>
+                          handleChangeDraftTask(idx, 'priority', e.target.value)
+                        }
+                      >
+                        <option value="LOW">Baixa</option>
+                        <option value="MEDIUM">Média</option>
+                        <option value="HIGH">Alta</option>
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Min"
+                        aria-label="Minutos estimados"
+                        value={draft.estimatedMinutes}
+                        onChange={(e) =>
+                          handleChangeDraftTask(
+                            idx,
+                            'estimatedMinutes',
+                            e.target.value
+                          )
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="icon-action-btn danger"
+                        title="Remover task"
+                        aria-label="Remover task da lista"
+                        onClick={() => handleRemoveDraftTask(idx)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <small className="field-hint">
+                  Clique em &ldquo;+ Adicionar task&rdquo; para já cadastrar novas tarefas vinculadas a esta meta.
+                </small>
+              )}
+            </div>
 
             <div className="form-actions">
               <button

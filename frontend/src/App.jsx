@@ -290,6 +290,24 @@ function App() {
         ? current.map((item) => (item.id === savedGoal.id ? savedGoal : item))
         : [savedGoal, ...current]
     })
+    // Sincroniza na lista global de tasks quaisquer tarefas criadas junto com o objetivo
+    if ( Array.isArray(savedGoal.tasks) && savedGoal.tasks.length > 0 ) {
+      const goalRef = {
+        id: savedGoal.id,
+        title: savedGoal.title,
+        defaultGoal: savedGoal.defaultGoal,
+      }
+      setTasks((current) => {
+        const existingIds = new Set(current.map((t) => t.id))
+        const newTasks = savedGoal.tasks
+          .filter((t) => t.id && !existingIds.has(t.id))
+          .map((t) => ({ ...t, goal: goalRef }))
+        const updatedCurrent = current.map((t) =>
+          t.goal?.id === savedGoal.id ? { ...t, goal: goalRef } : t
+        )
+        return [...newTasks, ...updatedCurrent]
+      })
+    }
     setGoalsError('')
   }
 
@@ -326,10 +344,8 @@ function App() {
       }
       if (!response.ok) throw new Error('Não foi possível excluir o objetivo.')
       setGoals((current) => current.filter((item) => item.id !== goalId))
-      // Desvincula nas tasks carregadas localmente
-      setTasks((current) =>
-        current.map((t) => (t.goal?.id === goalId ? { ...t, goal: null } : t))
-      )
+      // Remove da lista local as tasks vinculadas ao objetivo excluído (exclusão em cascata)
+      setTasks((current) => current.filter((t) => t.goal?.id !== goalId))
       setGoalsError('')
     } catch (requestError) {
       setGoalsError(requestError.message)

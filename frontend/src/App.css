@@ -970,6 +970,44 @@ h1 {
   gap: 12px;
 }
 
+.goal-tasks-builder {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.goal-tasks-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.goal-tasks-builder-header label {
+  margin: 0;
+}
+
+.goal-tasks-draft-list {
+  display: grid;
+  gap: 8px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.goal-task-draft-row {
+  display: grid;
+  grid-template-columns: 1fr 105px 74px 30px;
+  gap: 8px;
+  align-items: center;
+}
+
+.goal-task-draft-row input,
+.goal-task-draft-row select {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
