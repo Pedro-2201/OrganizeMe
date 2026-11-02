@@ -1,35 +1,60 @@
 package com.pedro_2201.organizeme_api.task.service;
 
+import com.pedro_2201.organizeme_api.auth.model.User;
+import com.pedro_2201.organizeme_api.goal.model.Goal;
+import com.pedro_2201.organizeme_api.goal.service.GoalService;
 import com.pedro_2201.organizeme_api.task.model.Task;
 import com.pedro_2201.organizeme_api.task.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @Service
 public class TaskService {
 
-    @Autowired //Injeta o repositório automaticamente
-    private TaskRepository taskRepository; //Injeta o repositório para usar os métodos de acesso a dados
+    @Autowired // Injeta o repositório automaticamente
+    private TaskRepository taskRepository; // Injeta o repositório para usar os métodos de acesso a dados
 
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll(); //Chama o metodo do repositório para buscar todos os organizes
+    @Autowired
+    private GoalService goalService; // Injeta o serviço de metas para validar a titularidade caso a tarefa seja vinculada a uma meta
+
+    // Busca todas as tarefas do usuário autenticado
+    public List<Task> getAllTasks(User user) {
+        return taskRepository.findByUser(user);
     }
 
-    public Task getTaskById(@RequestParam Long id) {
-        return taskRepository.getReferenceById(id);
+    // Busca uma tarefa específica garantindo que pertence ao usuário autenticado
+    public Task getTaskById(Long id, User user) {
+        return taskRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada com o ID: " + id));
     }
 
-    public Task createTask(Task task) {
-        return taskRepository.saveAndFlush(task); //Chama o metodo do repositorio para salvar uma task
+    // Cria ou atualiza uma tarefa vinculando-a obrigatoriamente ao usuário autenticado
+    public Task createTask(Task task, User user) {
+        // Se for atualização de tarefa existente, valida se realmente pertence ao usuário logado
+        if (task.getId() != null) {
+            Task existingTask = getTaskById(task.getId(), user);
+            task.setCreatedAt(existingTask.getCreatedAt()); // Preserva data de criação original
+        }
+
+        // Se a tarefa estiver vinculada a uma meta, valida se essa meta também pertence ao usuário logado
+        if (task.getGoal() != null && task.getGoal().getId() != null) {
+            Goal goal = goalService.getGoalById(task.getGoal().getId(), user);
+            task.setGoal(goal);
+        } else {
+            task.setGoal(null);
+        }
+
+        task.setUser(user); // Garante que a tarefa pertence ao usuário autenticado
+        return taskRepository.saveAndFlush(task); // Salva e persiste no banco de dados
     }
 
+    // Remove uma tarefa garantindo que pertence ao usuário autenticado
+    public void deleteTask(Long id, User user) {
+        Task existingTask = getTaskById(id, user);
+        taskRepository.delete(existingTask);
+    }
 }
-
-
-/*
-Contém toda a lógica de negócio: validações, regras, cálculos.
-É chamado pelo Controller e chama o Repository.
- */

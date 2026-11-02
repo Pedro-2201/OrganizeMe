@@ -6,6 +6,14 @@ const filters = [
   { value: 'concluidas', label: 'Concluídas' },
 ]
 
+const emptyGoalState = {
+  id: null,
+  title: '',
+  description: '',
+  targetDate: '',
+  completed: false,
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return null
   const [year, month, day] = dateStr.split('-')
@@ -22,38 +30,77 @@ function isOverdue(dateStr) {
   return new Date(year, month - 1, day) < new Date(new Date().toDateString())
 }
 
-function GoalsPage({ goals, isLoading, error, onCreateGoal, onToggleGoal, todayDate }) {
+function GoalsPage({
+  goals,
+  tasks = [],
+  isLoading,
+  error,
+  onCreateGoal,
+  onToggleGoal,
+  onDeleteGoal,
+  todayDate,
+}) {
   const [activeFilter, setActiveFilter] = useState('todas')
+  const [searchQuery, setSearchQuery] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState('')
-  const [newGoal, setNewGoal] = useState({ title: '', description: '', targetDate: '' })
+  const [goalForm, setGoalForm] = useState(emptyGoalState)
 
   const completedGoals = goals.filter((g) => g.completed).length
   const activeGoals = goals.length - completedGoals
-  const progressPercent = goals.length ? Math.round((completedGoals / goals.length) * 100) : 0
+  const progressPercent = goals.length
+    ? Math.round((completedGoals / goals.length) * 100)
+    : 0
 
   const visibleGoals = useMemo(() => {
-    if (activeFilter === 'ativas') return goals.filter((g) => !g.completed)
-    if (activeFilter === 'concluidas') return goals.filter((g) => g.completed)
-    return goals
-  }, [activeFilter, goals])
+    return goals.filter((goal) => {
+      if (activeFilter === 'ativas' && goal.completed) return false
+      if (activeFilter === 'concluidas' && !goal.completed) return false
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchTitle = (goal.title || '').toLowerCase().includes(q)
+        const matchDesc = (goal.description || '').toLowerCase().includes(q)
+        if (!matchTitle && !matchDesc) return false
+      }
+      return true
+    })
+  }, [activeFilter, searchQuery, goals])
+
+  function openNewGoalModal() {
+    setGoalForm(emptyGoalState)
+    setFormError('')
+    setIsFormOpen(true)
+  }
+
+  function openEditGoalModal(goal) {
+    setGoalForm({
+      id: goal.id,
+      title: goal.title || '',
+      description: goal.description || '',
+      targetDate: goal.targetDate || '',
+      completed: Boolean(goal.completed),
+    })
+    setFormError('')
+    setIsFormOpen(true)
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const title = newGoal.title.trim()
+    const title = goalForm.title.trim()
     if (!title) return
 
     setIsSaving(true)
     setFormError('')
     try {
       await onCreateGoal({
+        ...(goalForm.id ? { id: goalForm.id } : {}),
         title,
-        description: newGoal.description.trim(),
-        targetDate: newGoal.targetDate || null,
-        completed: false,
+        description: goalForm.description.trim(),
+        targetDate: goalForm.targetDate || null,
+        completed: goalForm.completed,
       })
-      setNewGoal({ title: '', description: '', targetDate: '' })
+      setGoalForm(emptyGoalState)
       setIsFormOpen(false)
     } catch (submitError) {
       setFormError(submitError.message)
@@ -65,135 +112,292 @@ function GoalsPage({ goals, isLoading, error, onCreateGoal, onToggleGoal, todayD
   return (
     <main className="content" id="objetivos">
       <header className="topbar">
-        <div className="breadcrumb">Workspace <span>/</span> Objetivos</div>
-        <button className="notification" type="button" aria-label="Notificações">♢<i /></button>
+        <div className="breadcrumb">
+          Workspace <span>/</span> <strong>Objetivos</strong>
+        </div>
       </header>
 
       <section className="page-heading">
         <div>
           <p className="eyebrow">{todayDate}</p>
-          <h1>Objetivos</h1>
-          <p className="subtitle">Defina suas grandes metas e acompanhe seu progresso.</p>
+          <h1>Meus objetivos</h1>
+          <p className="subtitle">
+            Defina suas grandes metas e acompanhe a evolução das tasks vinculadas.
+          </p>
         </div>
-        <button className="primary-button" type="button" onClick={() => setIsFormOpen(true)}>
+        <button
+          className="primary-button"
+          type="button"
+          onClick={openNewGoalModal}
+        >
           <span>+</span> Novo objetivo
         </button>
       </section>
 
       <section className="summary-grid" aria-label="Resumo dos objetivos">
         <article className="summary-card">
-          <span className="summary-icon purple">◈</span>
-          <div><span>Objetivos ativos</span><strong>{activeGoals}</strong></div>
+          <span className="summary-icon teal">◈</span>
+          <div>
+            <span>Objetivos ativos</span>
+            <strong>{activeGoals}</strong>
+          </div>
           <small>em andamento</small>
         </article>
         <article className="summary-card">
-          <span className="summary-icon green">✓</span>
-          <div><span>Concluídos</span><strong>{completedGoals}</strong></div>
-          <small>realizados</small>
+          <span className="summary-icon emerald">✓</span>
+          <div>
+            <span>Concluídos</span>
+            <strong>{completedGoals}</strong>
+          </div>
+          <small>alcançados</small>
         </article>
         <article className="summary-card">
-          <span className="summary-icon orange">↗</span>
-          <div><span>Taxa de conclusão</span><strong>{progressPercent}%</strong></div>
+          <span className="summary-icon amber">↗</span>
+          <div className="summary-progress-col">
+            <span>Taxa de conclusão</span>
+            <strong>{progressPercent}%</strong>
+            <div className="mini-progress-track" aria-hidden="true">
+              <div
+                className="mini-progress-fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
           <small>do total</small>
         </article>
       </section>
 
       <section className="tasks-section">
-        {(error || formError) && <p className="request-error" role="alert">{error || formError}</p>}
+        {(error || formError) && (
+          <p className="request-error" role="alert">
+            {error || formError}
+          </p>
+        )}
+
         <div className="section-header">
           <div>
-            <h2>Lista de objetivos <span>{goals.length}</span></h2>
-            <p>Acompanhe suas metas de longo prazo.</p>
+            <h2>
+              Lista de objetivos <span>{visibleGoals.length}</span>
+            </h2>
+            <p>Acompanhe suas metas de médio e longo prazo.</p>
           </div>
-          <div className="filters" role="group" aria-label="Filtrar objetivos">
-            {filters.map((filter) => (
-              <button
-                className={activeFilter === filter.value ? 'filter active' : 'filter'}
-                key={filter.value}
-                type="button"
-                onClick={() => setActiveFilter(filter.value)}
-              >
-                {filter.label}
-              </button>
-            ))}
+
+          <div className="toolbar-controls">
+            <div className="search-box">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar objetivo..."
+                aria-label="Buscar objetivos"
+              />
+            </div>
+            <div className="filters" role="group" aria-label="Filtrar objetivos">
+              {filters.map((filter) => (
+                <button
+                  className={
+                    activeFilter === filter.value ? 'filter active' : 'filter'
+                  }
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.value)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="task-list">
           {isLoading ? (
-            <div className="empty-state"><p>Carregando objetivos...</p></div>
+            <div className="empty-state">
+              <p>Carregando objetivos...</p>
+            </div>
           ) : visibleGoals.length ? (
-            visibleGoals.map((goal) => (
-              <article className={goal.completed ? 'task-card completed' : 'task-card'} key={goal.id}>
-                <button
-                  className="check-button"
-                  type="button"
-                  aria-label={goal.completed ? `Reabrir ${goal.title}` : `Concluir ${goal.title}`}
-                  onClick={() => onToggleGoal(goal)}
+            visibleGoals.map((goal) => {
+              const linkedTasks = tasks.filter((t) => t.goal?.id === goal.id)
+              const completedLinked = linkedTasks.filter((t) => t.completed).length
+              const taskProgress = linkedTasks.length
+                ? Math.round((completedLinked / linkedTasks.length) * 100)
+                : goal.completed
+                  ? 100
+                  : 0
+
+              return (
+                <article
+                  className={goal.completed ? 'task-card completed' : 'task-card'}
+                  key={goal.id}
                 >
-                  {goal.completed ? '✓' : ''}
-                </button>
-                <div className="task-info">
-                  <div className="task-title-row">
-                    <h3>{goal.title}</h3>
-                    {goal.targetDate && (
-                      <span className={`priority ${isOverdue(goal.targetDate) && !goal.completed ? 'high' : 'low'}`}>
-                        {isOverdue(goal.targetDate) && !goal.completed ? '⚠ Atrasado' : `📅 ${formatDate(goal.targetDate)}`}
+                  <button
+                    className="check-button"
+                    type="button"
+                    aria-label={
+                      goal.completed
+                        ? `Reabrir ${goal.title}`
+                        : `Concluir ${goal.title}`
+                    }
+                    onClick={() => onToggleGoal(goal)}
+                  >
+                    {goal.completed ? '✓' : ''}
+                  </button>
+
+                  <div className="task-info">
+                    <div className="task-title-row">
+                      <h3>{goal.title}</h3>
+                      {goal.targetDate && (
+                        <span
+                          className={`priority ${
+                            isOverdue(goal.targetDate) && !goal.completed
+                              ? 'high'
+                              : 'low'
+                          }`}
+                        >
+                          {isOverdue(goal.targetDate) && !goal.completed
+                            ? '⚠ Atrasado'
+                            : `📅 ${formatDate(goal.targetDate)}`}
+                        </span>
+                      )}
+                      {linkedTasks.length > 0 && (
+                        <span className="goal-tag">
+                          ✓ {completedLinked}/{linkedTasks.length} tasks ({taskProgress}%)
+                        </span>
+                      )}
+                    </div>
+                    {goal.description && <p>{goal.description}</p>}
+                    <div className="task-meta-row">
+                      <span className="due-date">
+                        {goal.targetDate
+                          ? `◷ Prazo final: ${formatDate(goal.targetDate)}`
+                          : '◷ Sem prazo definido'}
                       </span>
+                    </div>
+                  </div>
+
+                  <div className="card-actions">
+                    <button
+                      className="icon-action-btn"
+                      type="button"
+                      title="Editar objetivo"
+                      aria-label={`Editar ${goal.title}`}
+                      onClick={() => openEditGoalModal(goal)}
+                    >
+                      ✎
+                    </button>
+                    {onDeleteGoal && (
+                      <button
+                        className="icon-action-btn danger"
+                        type="button"
+                        title="Excluir objetivo"
+                        aria-label={`Excluir ${goal.title}`}
+                        onClick={() => onDeleteGoal(goal.id)}
+                      >
+                        ✕
+                      </button>
                     )}
                   </div>
-                  {goal.description && <p>{goal.description}</p>}
-                  <span className="due-date">
-                    {goal.targetDate
-                      ? `◷ Prazo: ${formatDate(goal.targetDate)}`
-                      : '◷ Sem prazo definido'}
-                  </span>
-                </div>
-              </article>
-            ))
+                </article>
+              )
+            })
           ) : (
             <div className="empty-state">
-              <span>◈</span>
-              <h3>Nenhum objetivo por aqui</h3>
-              <p>Adicione um novo objetivo ou altere o filtro selecionado.</p>
+              <span className="empty-icon">◈</span>
+              <h3>Nenhum objetivo encontrado</h3>
+              <p>
+                Adicione um novo objetivo no botão acima ou altere o filtro selecionado.
+              </p>
             </div>
           )}
         </div>
       </section>
 
       {isFormOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setIsFormOpen(false)}>
-          <form className="task-form" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setIsFormOpen(false)}
+        >
+          <form
+            className="task-form"
+            onSubmit={handleSubmit}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <div className="form-heading">
-              <div><p className="eyebrow">NOVO OBJETIVO</p><h2>Qual é sua meta?</h2></div>
-              <button type="button" className="close-button" onClick={() => setIsFormOpen(false)} aria-label="Fechar">×</button>
+              <div>
+                <p className="eyebrow">
+                  {goalForm.id ? 'EDITAR OBJETIVO' : 'NOVO OBJETIVO'}
+                </p>
+                <h2>
+                  {goalForm.id ? 'Atualizar meta' : 'Qual é sua grande meta?'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="close-button"
+                onClick={() => setIsFormOpen(false)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
             </div>
+
             <label htmlFor="goal-title">Título</label>
             <input
               id="goal-title"
               autoFocus
-              value={newGoal.title}
-              onChange={(event) => setNewGoal({ ...newGoal, title: event.target.value })}
-              placeholder="Ex.: Aprender TypeScript"
+              required
+              value={goalForm.title}
+              onChange={(event) =>
+                setGoalForm({ ...goalForm, title: event.target.value })
+              }
+              placeholder="Ex.: Dominar arquitetura de microsserviços"
             />
-            <label htmlFor="goal-description">Descrição <span>(opcional)</span></label>
+
+            <label htmlFor="goal-description">
+              Descrição <span>(opcional)</span>
+            </label>
             <textarea
               id="goal-description"
               rows="3"
-              value={newGoal.description}
-              onChange={(event) => setNewGoal({ ...newGoal, description: event.target.value })}
-              placeholder="Descreva sua meta com mais detalhes..."
+              value={goalForm.description}
+              onChange={(event) =>
+                setGoalForm({ ...goalForm, description: event.target.value })
+              }
+              placeholder="Descreva o resultado esperado e sua motivação..."
             />
-            <label htmlFor="goal-targetDate">Prazo <span>(opcional)</span></label>
+
+            <label htmlFor="goal-targetDate">
+              Prazo limite <span>(opcional)</span>
+            </label>
             <input
               id="goal-targetDate"
               type="date"
-              value={newGoal.targetDate}
-              onChange={(event) => setNewGoal({ ...newGoal, targetDate: event.target.value })}
+              value={goalForm.targetDate}
+              onChange={(event) =>
+                setGoalForm({ ...goalForm, targetDate: event.target.value })
+              }
             />
-            <button className="primary-button form-submit" type="submit" disabled={isSaving}>
-              {isSaving ? 'Salvando...' : 'Adicionar objetivo'}
-            </button>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setIsFormOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={isSaving}
+              >
+                {isSaving
+                  ? 'Salvando...'
+                  : goalForm.id
+                    ? 'Salvar alterações'
+                    : 'Criar objetivo'}
+              </button>
+            </div>
           </form>
         </div>
       )}

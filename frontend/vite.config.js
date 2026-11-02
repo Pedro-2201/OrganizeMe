@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/tasks': 'http://localhost:8080',
-      '/auth': 'http://localhost:8080',
       '/goals': 'http://localhost:8080',
+      '/auth': 'http://localhost:8080',
     },
   },
 })
