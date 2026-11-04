@@ -6,3 +6,9 @@ backend/PROJECT_STATUS_AND_ROADMAP.md
 .gemini/
 .vscode/settings.json
 backend/GUIA_ETAPA_2_DETALHADA.md
+
+# Environment variables
+.env
+
+# Private keys & certificates
+*.pem
