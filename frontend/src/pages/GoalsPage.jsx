@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import ConfirmDialog from '../components/ConfirmDialog'
+import Icon from '../components/Icon'
+import Modal from '../components/Modal'
 
 const filters = [
   { value: 'todas', label: 'Todas' },
@@ -43,6 +46,7 @@ function GoalsPage({
   const [activeFilter, setActiveFilter] = useState('todas')
   const [searchQuery, setSearchQuery] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [goalForm, setGoalForm] = useState(emptyGoalState)
@@ -282,7 +286,7 @@ function GoalsPage({
                       aria-label={`Editar ${goal.title}`}
                       onClick={() => openEditGoalModal(goal)}
                     >
-                      ✎
+                      <Icon name="edit" />
                     </button>
                     {onDeleteGoal && (
                       <button
@@ -290,9 +294,9 @@ function GoalsPage({
                         type="button"
                         title="Excluir objetivo"
                         aria-label={`Excluir ${goal.title}`}
-                        onClick={() => onDeleteGoal(goal.id)}
+                        onClick={() => setPendingDelete(goal)}
                       >
-                        ✕
+                        <Icon name="trash" />
                       </button>
                     )}
                   </div>
@@ -312,22 +316,14 @@ function GoalsPage({
       </section>
 
       {isFormOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={() => setIsFormOpen(false)}
-        >
-          <form
-            className="task-form"
-            onSubmit={handleSubmit}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+        <Modal onClose={() => setIsFormOpen(false)} labelledBy="goal-form-title">
+          <form className="task-form" onSubmit={handleSubmit}>
             <div className="form-heading">
               <div>
                 <p className="eyebrow">
                   {goalForm.id ? 'EDITAR OBJETIVO' : 'NOVO OBJETIVO'}
                 </p>
-                <h2>
+                <h2 id="goal-form-title">
                   {goalForm.id ? 'Atualizar meta' : 'Qual é sua grande meta?'}
                 </h2>
               </div>
@@ -337,14 +333,14 @@ function GoalsPage({
                 onClick={() => setIsFormOpen(false)}
                 aria-label="Fechar"
               >
-                ×
+                <Icon name="close" size={18} />
               </button>
             </div>
 
             <label htmlFor="goal-title">Título</label>
             <input
               id="goal-title"
-              autoFocus
+              data-autofocus
               required
               value={goalForm.title}
               onChange={(event) =>
@@ -399,7 +395,19 @@ function GoalsPage({
               </button>
             </div>
           </form>
-        </div>
+        </Modal>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Excluir objetivo?"
+          message={`"${pendingDelete.title}" será excluído permanentemente.`}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            onDeleteGoal(pendingDelete.id)
+            setPendingDelete(null)
+          }}
+        />
       )}
     </main>
   )

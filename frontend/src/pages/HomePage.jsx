@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import ConfirmDialog from '../components/ConfirmDialog'
+import Icon from '../components/Icon'
+
 const priorityLabels = {
   LOW: 'Baixa',
   MEDIUM: 'Média',
@@ -15,6 +19,7 @@ function HomePage({
   onNavigate,
   todayDate,
 }) {
+  const [pendingDelete, setPendingDelete] = useState(null)
   const completedTasks = tasks.filter((task) => task.completed).length
   const pendingTasks = tasks.length - completedTasks
   const progressPercent = tasks.length ? Math.round((completedTasks / tasks.length) * 100) : 0
@@ -180,9 +185,9 @@ function HomePage({
                         type="button"
                         title="Excluir task"
                         aria-label={`Excluir ${task.title}`}
-                        onClick={() => onDeleteTask(task.id)}
+                        onClick={() => setPendingDelete(task)}
                       >
-                        ✕
+                        <Icon name="trash" />
                       </button>
                     </div>
                   )}
@@ -260,6 +265,18 @@ function HomePage({
           </div>
         </section>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Excluir task?"
+          message={`"${pendingDelete.title}" será excluída permanentemente.`}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            onDeleteTask(pendingDelete.id)
+            setPendingDelete(null)
+          }}
+        />
+      )}
     </main>
   )
 }

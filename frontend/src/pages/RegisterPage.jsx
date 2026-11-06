@@ -1,10 +1,31 @@
 import { useState } from 'react'
+import Icon from '../components/Icon'
+
+const strengthLevels = [
+  { label: 'Muito fraca', color: '#e11d48' },
+  { label: 'Fraca', color: '#f59e0b' },
+  { label: 'Razoável', color: '#eab308' },
+  { label: 'Boa', color: '#10b981' },
+  { label: 'Forte', color: '#0d9488' },
+]
+
+// Pontua a senha de 0 a 4: tamanho, caixa mista, números e símbolos.
+function getPasswordStrength(password) {
+  if (!password) return null
+  let score = 0
+  if (password.length >= 6) score += 1
+  if (password.length >= 10) score += 1
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1
+  return { score, ...strengthLevels[score] }
+}
 
 function RegisterPage({ onRegister, onNavigate }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const strength = getPasswordStrength(password)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -119,7 +140,7 @@ function RegisterPage({ onRegister, onNavigate }) {
                 required
                 minLength={6}
                 enterKeyHint="done"
-                aria-describedby="reg-password-hint"
+                aria-describedby="reg-password-hint reg-password-strength"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Crie uma senha segura"
@@ -130,9 +151,17 @@ function RegisterPage({ onRegister, onNavigate }) {
                 aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? '🙈' : '👁️'}
+                {showPassword ? <Icon name="eye-off" /> : <Icon name="eye" />}
               </button>
             </div>
+            {strength && (
+              <div className="password-strength" id="reg-password-strength">
+                <div className="password-strength-bar" aria-hidden="true">
+                  <span style={{ width: `${(strength.score + 1) * 20}%`, background: strength.color }} />
+                </div>
+                <small aria-live="polite">Força da senha: {strength.label}</small>
+              </div>
+            )}
           </div>
 
           <button
