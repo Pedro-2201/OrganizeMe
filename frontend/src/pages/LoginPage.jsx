@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from '../components/Icon'
 
 function LoginPage({ onLogin, onNavigate }) {
   const [email, setEmail] = useState('')
@@ -103,7 +104,7 @@ function LoginPage({ onLogin, onNavigate }) {
                 aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? '🙈' : '👁️'}
+                {showPassword ? <Icon name="eye-off" /> : <Icon name="eye" />}
               </button>
             </div>
           </div>
