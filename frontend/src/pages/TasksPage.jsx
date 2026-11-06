@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import ConfirmDialog from '../components/ConfirmDialog'
+import Icon from '../components/Icon'
+import Modal from '../components/Modal'
 
 const filters = [
   { value: 'todas', label: 'Todas' },
@@ -36,6 +39,7 @@ function TasksPage({
   const [activeFilter, setActiveFilter] = useState('todas')
   const [searchQuery, setSearchQuery] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [taskForm, setTaskForm] = useState(emptyFormState)
@@ -270,7 +274,7 @@ function TasksPage({
                     aria-label={`Editar ${task.title}`}
                     onClick={() => openEditTaskModal(task)}
                   >
-                    ✎
+                    <Icon name="edit" />
                   </button>
                   {onDeleteTask && (
                     <button
@@ -278,9 +282,9 @@ function TasksPage({
                       type="button"
                       title="Excluir task"
                       aria-label={`Excluir ${task.title}`}
-                      onClick={() => onDeleteTask(task.id)}
+                      onClick={() => setPendingDelete(task)}
                     >
-                      ✕
+                      <Icon name="trash" />
                     </button>
                   )}
                 </div>
@@ -299,22 +303,14 @@ function TasksPage({
       </section>
 
       {isFormOpen && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={() => setIsFormOpen(false)}
-        >
-          <form
-            className="task-form"
-            onSubmit={handleSubmit}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+        <Modal onClose={() => setIsFormOpen(false)} labelledBy="task-form-title">
+          <form className="task-form" onSubmit={handleSubmit}>
             <div className="form-heading">
               <div>
                 <p className="eyebrow">
                   {taskForm.id ? 'EDITAR TASK' : 'NOVA TASK'}
                 </p>
-                <h2>
+                <h2 id="task-form-title">
                   {taskForm.id
                     ? 'Atualizar detalhes da task'
                     : 'O que precisa ser feito?'}
@@ -326,14 +322,14 @@ function TasksPage({
                 onClick={() => setIsFormOpen(false)}
                 aria-label="Fechar"
               >
-                ×
+                <Icon name="close" size={18} />
               </button>
             </div>
 
             <label htmlFor="title">Título</label>
             <input
               id="title"
-              autoFocus
+              data-autofocus
               required
               value={taskForm.title}
               onChange={(event) =>
@@ -453,7 +449,19 @@ function TasksPage({
               </button>
             </div>
           </form>
-        </div>
+        </Modal>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Excluir task?"
+          message={`"${pendingDelete.title}" será excluída permanentemente.`}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => {
+            onDeleteTask(pendingDelete.id)
+            setPendingDelete(null)
+          }}
+        />
       )}
     </main>
   )
