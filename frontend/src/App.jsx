@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import HomePage from './pages/HomePage'
@@ -6,6 +6,7 @@ import TasksPage from './pages/TasksPage'
 import GoalsPage from './pages/GoalsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import Toast from './components/Toast'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ function App() {
   const [isLoadingGoals, setIsLoadingGoals] = useState(() => Boolean(getStoredToken() && getStoredUser()))
   const [error, setError] = useState('')
   const [goalsError, setGoalsError] = useState('')
+  const [toast, setToast] = useState(null)
 
   const todayDate = getTodayFormatted()
   const isAuthenticated = Boolean(getStoredToken() && user)
@@ -139,6 +141,12 @@ function App() {
     }
     loadGoals()
   }, [isAuthenticated, user?.email])
+
+  const dismissToast = useCallback(() => setToast(null), [])
+
+  function notify(message, type = 'success') {
+    setToast({ id: Date.now(), message, type })
+  }
 
   // ─── Navegação ───────────────────────────────────────────────────────────
 
@@ -228,6 +236,7 @@ function App() {
       setError('')
     } catch (requestError) {
       setError(requestError.message)
+      notify(requestError.message, 'error')
     }
   }
 
@@ -265,8 +274,10 @@ function App() {
       if (!response.ok) throw new Error('Não foi possível excluir a task.')
       setTasks((current) => current.filter((item) => item.id !== taskId))
       setError('')
+      notify('Task excluída.')
     } catch (requestError) {
       setError(requestError.message)
+      notify(requestError.message, 'error')
     }
   }
 
@@ -331,8 +342,10 @@ function App() {
         current.map((t) => (t.goal?.id === goalId ? { ...t, goal: null } : t))
       )
       setGoalsError('')
+      notify('Objetivo excluído.')
     } catch (requestError) {
       setGoalsError(requestError.message)
+      notify(requestError.message, 'error')
     }
   }
 
@@ -401,6 +414,8 @@ function App() {
           todayDate={todayDate}
         />
       )}
+
+      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   )
 }
