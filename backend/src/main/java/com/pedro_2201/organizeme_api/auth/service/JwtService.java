@@ -12,58 +12,62 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
 
-@Service
+@Service // Indica que a classe é um componente de serviço do Spring (contém as regras de negócio)
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
+    @Value("${jwt.secret}") // Injeta a chave secreta configurada no application.properties
+    private String secretKey; // Chave secreta em Base64 utilizada para assinar os tokens JWT
 
-    @Value("${jwt.expiration}")
-    private long jwtExpiration;
+    @Value("${jwt.expiration}") // Injeta o tempo de expiração configurado no application.properties
+    private long jwtExpiration; // Tempo de validade do token JWT em milissegundos
 
-    // Extrai o email (subject) do token
+    // Extrai o email (subject) contido no token JWT
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Extrai qualquer claim do token usando um resolver
+    // Extrai uma claim específica do token JWT utilizando uma função de mapeamento (resolver)
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // Gera um token JWT para o usuário
+    // Gera um novo token JWT assinado para o usuário autenticado
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSigningKey())
-                .compact();
+                .subject(userDetails.getUsername()) // Define o identificador (subject) do usuário no payload
+                .issuedAt(new Date(System.currentTimeMillis())) // Define a data e hora de emissão do token
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration)) // Define a data e hora de expiração do token
+                .signWith(getSigningKey()) // Assina o token utilizando a chave criptográfica HMAC SHA
+                .compact(); // Constrói e serializa o token para formato compacto de String
     }
 
-    // Valida se o token pertence ao usuário e não está expirado
+    // Valida se o token pertence ao usuário informado e se ainda não está expirado
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
+    // Verifica se a data de expiração do token é anterior ao momento atual
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
+    // Extrai a data de expiração presente no token JWT
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    // Faz o parsing e validação da assinatura do token para obter todas as claims (payload)
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .verifyWith(getSigningKey()) // Configura a chave de assinatura para validação
+                .build() // Constrói o parser JWT configurado
+                .parseSignedClaims(token) // Realiza a leitura e validação do token assinado
+                .getPayload(); // Retorna o payload contendo as claims
     }
 
+    // Decodifica a chave secreta em Base64 e gera a chave criptográfica SecretKey para HMAC SHA
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
