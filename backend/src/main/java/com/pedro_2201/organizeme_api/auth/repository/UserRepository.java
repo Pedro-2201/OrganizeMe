@@ -6,8 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-@Repository
+/**
+ * Interface para o repositório de usuários.
+ */
+@Repository // Indica que é um bean de acesso a dados e que deve ser gerenciado pelo Spring
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    // Busca um usuário pelo endereço de email para autenticação
     Optional<User> findByEmail(String email);
 }
 
