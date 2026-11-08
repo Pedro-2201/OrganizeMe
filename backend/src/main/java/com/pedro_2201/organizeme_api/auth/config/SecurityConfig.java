@@ -16,49 +16,50 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-@Configuration
-@EnableWebSecurity
+@Configuration // Indica que a classe contém definições de beans de configuração do Spring
+@EnableWebSecurity // Habilita a segurança web customizada do Spring Security
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider;
+    private final JwtAuthFilter jwtAuthFilter; // Filtro de autenticação JWT injetado via construtor
+    private final AuthenticationProvider authenticationProvider; // Provedor de autenticação injetado via construtor
 
+    // Construtor para injeção das dependências necessárias de segurança
     public SecurityConfig(JwtAuthFilter jwtAuthFilter, AuthenticationProvider authenticationProvider) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationProvider = authenticationProvider;
     }
 
-    // Define quais rotas são públicas e quais exigem autenticação
+    // Configura a cadeia de filtros de segurança (rotas públicas, autenticação e sessão stateless)
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // Desabilita CSRF pois usamos JWT (stateless)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable) // Desabilita CSRF pois a API utiliza autenticação JWT stateless
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Aplica as configurações de CORS
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll() // Rotas de login e cadastro são públicas
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Swagger público
-                        .anyRequest().authenticated() // Todo o resto exige autenticação
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Documentação Swagger pública
+                        .anyRequest().authenticated() // Todas as outras rotas exigem autenticação prévia
                 )
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Sem sessão no servidor
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Sem estado (Stateless): sem sessões no servidor
                 )
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Registra o filtro JWT
+                .authenticationProvider(authenticationProvider) // Registra o provedor de autenticação customizado
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Registra o filtro JWT antes do filtro padrão de autenticação
 
         return http.build();
     }
 
-    // Configuração de CORS para permitir requisições do frontend
+    // Configuração de CORS para permitir requisições de clientes frontend (como Vite/React)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000")); // Origens permitidas
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // Métodos HTTP permitidos
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type")); // Headers HTTP permitidos
+        configuration.setAllowCredentials(true); // Permite o envio de credenciais entre origens
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", configuration); // Aplica a configuração a todas as rotas da API
         return source;
     }
 }

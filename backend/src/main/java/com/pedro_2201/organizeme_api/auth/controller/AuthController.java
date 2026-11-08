@@ -14,25 +14,24 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@RestController
-@RequestMapping("/auth")
+@RestController // Combina @Controller + @ResponseBody (retorna JSON automaticamente)
+@RequestMapping("/auth") // Prefixo de todas as rotas dessa classe
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    @Autowired // Injeta o serviço automaticamente
+    private AuthService authService; // Injeta o serviço para usar os métodos de negócio de autenticação
 
-    @PostMapping("/register")
+    @PostMapping("/register") // Define o endpoint POST /auth/register - registra um novo usuário no sistema
     public ResponseEntity<AuthResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
-    @PostMapping("/login")
+    @PostMapping("/login") // Define o endpoint POST /auth/login - autentica um usuário e gera o token JWT
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    // Endpoint para verificar se o token ainda é válido (usado pelo frontend ao iniciar)
-    @GetMapping("/me")
+    @GetMapping("/me") // Define o endpoint GET /auth/me - valida a sessão e retorna dados do usuário autenticado
     public ResponseEntity<Map<String, String>> me(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(Map.of("name", user.getName(), "email", user.getEmail()));
     }
