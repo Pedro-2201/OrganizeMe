@@ -59,10 +59,44 @@ function App() {
   const [isLoadingGoals, setIsLoadingGoals] = useState(() => Boolean(getStoredToken() && getStoredUser()))
   const [error, setError] = useState('')
   const [goalsError, setGoalsError] = useState('')
-  const [toast, setToast] = useState(null)
+  const [toasts, setToasts] = useState([])
 
   const todayDate = getTodayFormatted()
-  const isAuthenticated = Boolean(getStoredToken() && user)
+  const dismissToast = useCallback((id) => {
+    setToasts((current) => current.filter((t) => t.id !== id))
+  }, [])
+
+  const notify = useCallback((message, type = 'success', duration = 4000) => {
+    const id = Date.now() + Math.random().toString(36).slice(2, 6)
+    setToasts((current) => [...current.slice(-4), { id, message, type, duration }])
+  }, [])
+
+  // ─── Navegação ───────────────────────────────────────────────────────────
+
+  const handleNavigate = useCallback((page) => {
+    setActivePage(page)
+    const hashMap = {
+      home: '#inicio',
+      tasks: '#tasks',
+      goals: '#objetivos',
+      login: '#login',
+      register: '#cadastro',
+    }
+    window.location.hash = hashMap[page] || '#inicio'
+  }, [])
+
+  // Remove token e dados do usuário, redireciona para login
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('organizeme_token')
+    localStorage.removeItem('organizeme_user')
+    setUser(null)
+    setTasks([])
+    setGoals([])
+    setIsLoading(false)
+    setIsLoadingGoals(false)
+    notify('Você saiu da sua conta.', 'info')
+    handleNavigate('login')
+  }, [notify, handleNavigate])
 
   // Sincroniza a página com a hash da URL
   useEffect(() => {
@@ -94,7 +128,7 @@ function App() {
       }
     }
     verifySession()
-  }, [])
+  }, [handleLogout])
 
   // Carrega tasks quando autenticado
   useEffect(() => {
@@ -117,7 +151,7 @@ function App() {
       }
     }
     loadTasks()
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.email, handleLogout])
 
   // Carrega goals quando autenticado
   useEffect(() => {
@@ -140,27 +174,7 @@ function App() {
       }
     }
     loadGoals()
-  }, [isAuthenticated, user?.email])
-
-  const dismissToast = useCallback(() => setToast(null), [])
-
-  function notify(message, type = 'success') {
-    setToast({ id: Date.now(), message, type })
-  }
-
-  // ─── Navegação ───────────────────────────────────────────────────────────
-
-  function handleNavigate(page) {
-    setActivePage(page)
-    const hashMap = {
-      home: '#inicio',
-      tasks: '#tasks',
-      goals: '#objetivos',
-      login: '#login',
-      register: '#cadastro',
-    }
-    window.location.hash = hashMap[page] || '#inicio'
-  }
+  }, [isAuthenticated, user?.email, handleLogout])
 
   // ─── Auth ────────────────────────────────────────────────────────────────
 
@@ -174,13 +188,16 @@ function App() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      throw new Error(data.message || 'Email ou senha incorretos.')
+      const msg = data.message || 'Email ou senha incorretos.'
+      notify(msg, 'error')
+      throw new Error(msg)
     }
 
     const data = await response.json()
     localStorage.setItem('organizeme_token', data.token)
     localStorage.setItem('organizeme_user', JSON.stringify({ name: data.name, email: data.email }))
     setUser({ name: data.name, email: data.email })
+    notify(`Bem-vindo de volta, ${data.name.split(' ')[0]}!`, 'success')
     handleNavigate('home')
   }
 
@@ -194,32 +211,25 @@ function App() {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      throw new Error(data.message || 'Não foi possível criar a conta. Tente novamente.')
+      const msg = data.message || 'Não foi possível criar a conta. Tente novamente.'
+      notify(msg, 'error')
+      throw new Error(msg)
     }
 
     const data = await response.json()
     localStorage.setItem('organizeme_token', data.token)
     localStorage.setItem('organizeme_user', JSON.stringify({ name: data.name, email: data.email }))
     setUser({ name: data.name, email: data.email })
+    notify('Conta criada com sucesso! Aproveite o OrganizeMe.', 'success')
     handleNavigate('home')
   }
 
-  // Remove token e dados do usuário, redireciona para login
-  function handleLogout() {
-    localStorage.removeItem('organizeme_token')
-    localStorage.removeItem('organizeme_user')
-    setUser(null)
-    setTasks([])
-    setGoals([])
-    setIsLoading(false)
-    setIsLoadingGoals(false)
-    handleNavigate('login')
-  }
 
   // ─── Tasks ───────────────────────────────────────────────────────────────
 
   async function handleToggleTask(task) {
-    const updatedTask = { ...task, completed: !task.completed }
+    const nextCompleted = !task.completed
+    const updatedTask = { ...task, completed: nextCompleted }
     try {
       const response = await fetch('/tasks', {
         method: 'POST',
@@ -234,6 +244,12 @@ function App() {
       const savedTask = await response.json()
       setTasks((current) => current.map((item) => (item.id === savedTask.id ? savedTask : item)))
       setError('')
+      notify(
+        nextCompleted
+          ? `✓ "${task.title}" marcada como concluída!`
+          : `Task "${task.title}" reaberta.`,
+        'success'
+      )
     } catch (requestError) {
       setError(requestError.message)
       notify(requestError.message, 'error')
@@ -241,6 +257,7 @@ function App() {
   }
 
   async function handleSaveTask(taskData) {
+    const isEdit = Boolean(taskData.id)
     const response = await fetch('/tasks', {
       method: 'POST',
       headers: authHeaders(),
@@ -250,7 +267,12 @@ function App() {
       handleLogout()
       return
     }
-    if (!response.ok) throw new Error('Não foi possível salvar a task.')
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      const msg = errData.message || 'Não foi possível salvar a task.'
+      notify(msg, 'error')
+      throw new Error(msg)
+    }
     const savedTask = await response.json()
     setTasks((current) => {
       const exists = current.some((item) => item.id === savedTask.id)
@@ -259,9 +281,14 @@ function App() {
         : [savedTask, ...current]
     })
     setError('')
+    notify(
+      isEdit ? `Task "${savedTask.title}" atualizada!` : `Task "${savedTask.title}" criada com sucesso!`,
+      'success'
+    )
   }
 
   async function handleDeleteTask(taskId) {
+    const taskToDelete = tasks.find((t) => t.id === taskId)
     try {
       const response = await fetch(`/tasks/${taskId}`, {
         method: 'DELETE',
@@ -274,7 +301,10 @@ function App() {
       if (!response.ok) throw new Error('Não foi possível excluir a task.')
       setTasks((current) => current.filter((item) => item.id !== taskId))
       setError('')
-      notify('Task excluída.')
+      notify(
+        taskToDelete ? `Task "${taskToDelete.title}" excluída.` : 'Task excluída com sucesso.',
+        'info'
+      )
     } catch (requestError) {
       setError(requestError.message)
       notify(requestError.message, 'error')
@@ -284,6 +314,7 @@ function App() {
   // ─── Goals ───────────────────────────────────────────────────────────────
 
   async function handleSaveGoal(goalData) {
+    const isEdit = Boolean(goalData.id)
     const response = await fetch('/goals', {
       method: 'POST',
       headers: authHeaders(),
@@ -293,7 +324,12 @@ function App() {
       handleLogout()
       return
     }
-    if (!response.ok) throw new Error('Não foi possível salvar o objetivo.')
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      const msg = errData.message || 'Não foi possível salvar o objetivo.'
+      notify(msg, 'error')
+      throw new Error(msg)
+    }
     const savedGoal = await response.json()
     setGoals((current) => {
       const exists = current.some((item) => item.id === savedGoal.id)
@@ -302,10 +338,15 @@ function App() {
         : [savedGoal, ...current]
     })
     setGoalsError('')
+    notify(
+      isEdit ? `Objetivo "${savedGoal.title}" atualizado!` : `Objetivo "${savedGoal.title}" criado com sucesso!`,
+      'success'
+    )
   }
 
   async function handleToggleGoal(goal) {
-    const updatedGoal = { ...goal, completed: !goal.completed }
+    const nextCompleted = !goal.completed
+    const updatedGoal = { ...goal, completed: nextCompleted }
     try {
       const response = await fetch('/goals', {
         method: 'POST',
@@ -320,12 +361,20 @@ function App() {
       const savedGoal = await response.json()
       setGoals((current) => current.map((item) => (item.id === savedGoal.id ? savedGoal : item)))
       setGoalsError('')
+      notify(
+        nextCompleted
+          ? `🎉 Parabéns! Objetivo "${goal.title}" concluído!`
+          : `Objetivo "${goal.title}" reativado.`,
+        'success'
+      )
     } catch (requestError) {
       setGoalsError(requestError.message)
+      notify(requestError.message, 'error')
     }
   }
 
   async function handleDeleteGoal(goalId) {
+    const goalToDelete = goals.find((g) => g.id === goalId)
     try {
       const response = await fetch(`/goals/${goalId}`, {
         method: 'DELETE',
@@ -342,7 +391,10 @@ function App() {
         current.map((t) => (t.goal?.id === goalId ? { ...t, goal: null } : t))
       )
       setGoalsError('')
-      notify('Objetivo excluído.')
+      notify(
+        goalToDelete ? `Objetivo "${goalToDelete.title}" excluído.` : 'Objetivo excluído.',
+        'info'
+      )
     } catch (requestError) {
       setGoalsError(requestError.message)
       notify(requestError.message, 'error')
@@ -352,16 +404,31 @@ function App() {
   // ─── Render ──────────────────────────────────────────────────────────────
 
   if (activePage === 'login') {
-    return <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+    return (
+      <>
+        <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+        <Toast toasts={toasts} onDismiss={dismissToast} />
+      </>
+    )
   }
 
   if (activePage === 'register') {
-    return <RegisterPage onNavigate={handleNavigate} onRegister={handleRegister} />
+    return (
+      <>
+        <RegisterPage onNavigate={handleNavigate} onRegister={handleRegister} />
+        <Toast toasts={toasts} onDismiss={dismissToast} />
+      </>
+    )
   }
 
   // Redireciona para login se não autenticado ao tentar acessar páginas protegidas
   if (!isAuthenticated) {
-    return <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+    return (
+      <>
+        <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+        <Toast toasts={toasts} onDismiss={dismissToast} />
+      </>
+    )
   }
 
   return (
@@ -415,7 +482,7 @@ function App() {
         />
       )}
 
-      <Toast toast={toast} onDismiss={dismissToast} />
+      <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
