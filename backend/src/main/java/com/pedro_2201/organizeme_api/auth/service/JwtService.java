@@ -21,6 +21,11 @@ public class JwtService {
     @Value("${jwt.expiration}") // Injeta o tempo de expiração configurado no application.properties
     private long jwtExpiration; // Tempo de validade do token JWT em milissegundos
 
+    // Retorna o tempo de expiração do token em segundos (usado para Max-Age do cookie HttpOnly)
+    public long getJwtExpirationSeconds() {
+        return jwtExpiration / 1000;
+    }
+
     // Extrai o email (subject) contido no token JWT
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

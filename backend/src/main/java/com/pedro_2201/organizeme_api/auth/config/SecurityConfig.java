@@ -36,9 +36,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // Desabilita CSRF pois a API utiliza autenticação JWT stateless
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Aplica as configurações de CORS
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Rotas de login e cadastro são públicas
+                        .requestMatchers("/auth/register", "/auth/login", "/auth/logout").permitAll() // Rotas públicas de autenticação
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Documentação Swagger pública
-                        .anyRequest().authenticated() // Todas as outras rotas exigem autenticação prévia
+                        .anyRequest().authenticated() // Todas as outras rotas (incluindo /auth/me) exigem autenticação prévia
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Sem estado (Stateless): sem sessões no servidor
