@@ -43,6 +43,23 @@ public class GoalService {
         return goalRepository.saveAndFlush(goal); // Salva e persiste a meta no banco de dados
     }
 
+    // Atualiza os campos de uma meta existente garantindo que pertence ao usuário autenticado
+    public Goal updateGoal(Long id, Goal updatedGoal, User user) {
+        Goal existingGoal = getGoalById(id, user);
+        existingGoal.setTitle(updatedGoal.getTitle());
+        existingGoal.setDescription(updatedGoal.getDescription());
+        existingGoal.setTargetDate(updatedGoal.getTargetDate());
+        existingGoal.setCompleted(updatedGoal.isCompleted());
+        return goalRepository.saveAndFlush(existingGoal);
+    }
+
+    // Alterna apenas o status de conclusão da meta sem reenviar o objeto completo
+    public Goal toggleGoalCompleted(Long id, User user) {
+        Goal existingGoal = getGoalById(id, user);
+        existingGoal.setCompleted(!existingGoal.isCompleted());
+        return goalRepository.saveAndFlush(existingGoal);
+    }
+
     // Remove uma meta garantindo que ela pertence ao usuário autenticado
     public void deleteGoal(Long id, User user) {
         Goal existingGoal = getGoalById(id, user);

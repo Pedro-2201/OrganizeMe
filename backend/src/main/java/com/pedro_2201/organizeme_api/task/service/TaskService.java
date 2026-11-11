@@ -52,6 +52,33 @@ public class TaskService {
         return taskRepository.saveAndFlush(task); // Salva e persiste no banco de dados
     }
 
+    // Atualiza os campos de uma tarefa existente garantindo que pertence ao usuário autenticado
+    public Task updateTask(Long id, Task updatedTask, User user) {
+        Task existingTask = getTaskById(id, user);
+        existingTask.setTitle(updatedTask.getTitle());
+        existingTask.setDescription(updatedTask.getDescription());
+        existingTask.setCompleted(updatedTask.isCompleted());
+        existingTask.setPriority(updatedTask.getPriority());
+        existingTask.setEstimatedMinutes(updatedTask.getEstimatedMinutes());
+        existingTask.setSpentMinutes(updatedTask.getSpentMinutes());
+
+        if (updatedTask.getGoal() != null && updatedTask.getGoal().getId() != null) {
+            Goal goal = goalService.getGoalById(updatedTask.getGoal().getId(), user);
+            existingTask.setGoal(goal);
+        } else {
+            existingTask.setGoal(null);
+        }
+
+        return taskRepository.saveAndFlush(existingTask);
+    }
+
+    // Alterna apenas o status de conclusão da tarefa sem reenviar o objeto completo
+    public Task toggleTaskCompleted(Long id, User user) {
+        Task existingTask = getTaskById(id, user);
+        existingTask.setCompleted(!existingTask.isCompleted());
+        return taskRepository.saveAndFlush(existingTask);
+    }
+
     // Remove uma tarefa garantindo que pertence ao usuário autenticado
     public void deleteTask(Long id, User user) {
         Task existingTask = getTaskById(id, user);

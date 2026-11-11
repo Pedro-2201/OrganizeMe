@@ -27,9 +27,19 @@ public class GoalController {
         return goalService.getGoalById(id, user);
     }
 
-    @PostMapping // Define o endpoint POST /goals - cria ou atualiza uma meta para o usuário autenticado
+    @PostMapping // Define o endpoint POST /goals - cria uma nova meta para o usuário autenticado
     public Goal salvar(@RequestBody Goal goal, @AuthenticationPrincipal User user) {
         return goalService.createGoal(goal, user);
+    }
+
+    @PutMapping("/{id}") // Define o endpoint PUT /goals/{id} - atualiza uma meta existente do usuário autenticado
+    public Goal atualizar(@PathVariable Long id, @RequestBody Goal goal, @AuthenticationPrincipal User user) {
+        return goalService.updateGoal(id, goal, user);
+    }
+
+    @PatchMapping("/{id}/toggle") // Define o endpoint PATCH /goals/{id}/toggle - alterna conclusão da meta
+    public Goal alternarConclusao(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return goalService.toggleGoalCompleted(id, user);
     }
 
     @DeleteMapping("/{id}") // Define o endpoint DELETE /goals/{id} - exclui meta do usuário autenticado

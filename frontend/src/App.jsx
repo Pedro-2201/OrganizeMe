@@ -7,6 +7,9 @@ import GoalsPage from './pages/GoalsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import Toast from './components/Toast'
+import { AuthProvider } from './contexts/AuthContext'
+import { useAuth } from './hooks/useAuth'
+import { apiFetch } from './services/api'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -25,223 +28,119 @@ function getTodayFormatted() {
     .toUpperCase()
 }
 
-// Lê o token salvo no localStorage
-function getStoredToken() {
-  return localStorage.getItem('organizeme_token')
-}
+// ─── Conteúdo Principal ─────────────────────────────────────────────────────
 
-// Lê os dados do usuário salvos no localStorage
-function getStoredUser() {
-  try {
-    return JSON.parse(localStorage.getItem('organizeme_user')) || null
-  } catch {
-    return null
-  }
-}
-
-// Cria o header Authorization com o token Bearer para todas as chamadas autenticadas
-function authHeaders() {
-  const token = getStoredToken()
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
-}
-
-// ─── App ─────────────────────────────────────────────────────────────────────
-
-function App() {
-  const [activePage, setActivePage] = useState(getInitialPage)
-  const [user, setUser] = useState(getStoredUser) // { name, email } do usuário logado
+function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
+  const { user, isAuthenticated, isCheckingAuth, login, register, logout } = useAuth()
   const [tasks, setTasks] = useState([])
   const [goals, setGoals] = useState([])
-  const [isLoading, setIsLoading] = useState(() => Boolean(getStoredToken() && getStoredUser()))
-  const [isLoadingGoals, setIsLoadingGoals] = useState(() => Boolean(getStoredToken() && getStoredUser()))
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingGoals, setIsLoadingGoals] = useState(false)
   const [error, setError] = useState('')
   const [goalsError, setGoalsError] = useState('')
-  const [toasts, setToasts] = useState([])
 
   const todayDate = getTodayFormatted()
-  const dismissToast = useCallback((id) => {
-    setToasts((current) => current.filter((t) => t.id !== id))
-  }, [])
-
-  const notify = useCallback((message, type = 'success', duration = 4000) => {
-    const id = Date.now() + Math.random().toString(36).slice(2, 6)
-    setToasts((current) => [...current.slice(-4), { id, message, type, duration }])
-  }, [])
-
-  // ─── Navegação ───────────────────────────────────────────────────────────
-
-  const handleNavigate = useCallback((page) => {
-    setActivePage(page)
-    const hashMap = {
-      home: '#inicio',
-      tasks: '#tasks',
-      goals: '#objetivos',
-      login: '#login',
-      register: '#cadastro',
-    }
-    window.location.hash = hashMap[page] || '#inicio'
-  }, [])
-
-  // Remove token e dados do usuário, redireciona para login
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('organizeme_token')
-    localStorage.removeItem('organizeme_user')
-    setUser(null)
-    setTasks([])
-    setGoals([])
-    setIsLoading(false)
-    setIsLoadingGoals(false)
-    notify('Você saiu da sua conta.', 'info')
-    handleNavigate('login')
-  }, [notify, handleNavigate])
-
-  // Sincroniza a página com a hash da URL
-  useEffect(() => {
-    function handleHashChange() {
-      setActivePage(getInitialPage())
-    }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
-
-  // Valida o token atual ao iniciar a aplicação
-  useEffect(() => {
-    const token = getStoredToken()
-    if (!token) return
-    async function verifySession() {
-      try {
-        const response = await fetch('/auth/me', { headers: authHeaders() })
-        if (response.status === 401 || response.status === 403) {
-          handleLogout()
-          return
-        }
-        if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
-          localStorage.setItem('organizeme_user', JSON.stringify(userData))
-        }
-      } catch {
-        // Caso o servidor esteja temporariamente indisponível, mantém dados locais
-      }
-    }
-    verifySession()
-  }, [handleLogout])
 
   // Carrega tasks quando autenticado
   useEffect(() => {
     if (!isAuthenticated) return
+    let active = true
     async function loadTasks() {
       setIsLoading(true)
       try {
-        const response = await fetch('/tasks', { headers: authHeaders() })
-        if (response.status === 401 || response.status === 403) {
-          handleLogout()
-          return
+        const data = await apiFetch('/tasks', {
+          defaultErrorMessage: 'Não foi possível carregar as tasks.',
+        })
+        if (active && data) {
+          setTasks(data)
+          setError('')
         }
-        if (!response.ok) throw new Error('Não foi possível carregar as tasks.')
-        setTasks(await response.json())
-        setError('')
       } catch (requestError) {
-        setError(requestError.message)
+        if (active && !requestError.isAuthError) {
+          setError(requestError.message)
+        }
       } finally {
-        setIsLoading(false)
+        if (active) {
+          setIsLoading(false)
+        }
       }
     }
     loadTasks()
-  }, [isAuthenticated, user?.email, handleLogout])
+    return () => {
+      active = false
+    }
+  }, [isAuthenticated, user?.email])
 
   // Carrega goals quando autenticado
   useEffect(() => {
     if (!isAuthenticated) return
+    let active = true
     async function loadGoals() {
       setIsLoadingGoals(true)
       try {
-        const response = await fetch('/goals', { headers: authHeaders() })
-        if (response.status === 401 || response.status === 403) {
-          handleLogout()
-          return
+        const data = await apiFetch('/goals', {
+          defaultErrorMessage: 'Não foi possível carregar os objetivos.',
+        })
+        if (active && data) {
+          setGoals(data)
+          setGoalsError('')
         }
-        if (!response.ok) throw new Error('Não foi possível carregar os objetivos.')
-        setGoals(await response.json())
-        setGoalsError('')
       } catch (requestError) {
-        setGoalsError(requestError.message)
+        if (active && !requestError.isAuthError) {
+          setGoalsError(requestError.message)
+        }
       } finally {
-        setIsLoadingGoals(false)
+        if (active) {
+          setIsLoadingGoals(false)
+        }
       }
     }
     loadGoals()
-  }, [isAuthenticated, user?.email, handleLogout])
+    return () => {
+      active = false
+    }
+  }, [isAuthenticated, user?.email])
 
   // ─── Auth ────────────────────────────────────────────────────────────────
 
-  // Chama POST /auth/login, salva token e dados do usuário no localStorage
   async function handleLogin(credentials) {
-    const response = await fetch('/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: credentials.email, password: credentials.password }),
-    })
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}))
-      const msg = data.message || 'Email ou senha incorretos.'
-      notify(msg, 'error')
-      throw new Error(msg)
+    try {
+      const userData = await login(credentials)
+      notify(`Bem-vindo de volta, ${userData.name.split(' ')[0]}!`, 'success')
+      onNavigate('home')
+    } catch (err) {
+      notify(err.message, 'error')
+      throw err
     }
-
-    const data = await response.json()
-    localStorage.setItem('organizeme_token', data.token)
-    localStorage.setItem('organizeme_user', JSON.stringify({ name: data.name, email: data.email }))
-    setUser({ name: data.name, email: data.email })
-    notify(`Bem-vindo de volta, ${data.name.split(' ')[0]}!`, 'success')
-    handleNavigate('home')
   }
 
-  // Chama POST /auth/register, salva token e dados do usuário no localStorage
-  async function handleRegister(userData) {
-    const response = await fetch('/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: userData.name, email: userData.email, password: userData.password }),
-    })
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}))
-      const msg = data.message || 'Não foi possível criar a conta. Tente novamente.'
-      notify(msg, 'error')
-      throw new Error(msg)
+  async function handleRegister(userInfo) {
+    try {
+      await register(userInfo)
+      notify('Conta criada com sucesso! Aproveite o OrganizeMe.', 'success')
+      onNavigate('home')
+    } catch (err) {
+      notify(err.message, 'error')
+      throw err
     }
-
-    const data = await response.json()
-    localStorage.setItem('organizeme_token', data.token)
-    localStorage.setItem('organizeme_user', JSON.stringify({ name: data.name, email: data.email }))
-    setUser({ name: data.name, email: data.email })
-    notify('Conta criada com sucesso! Aproveite o OrganizeMe.', 'success')
-    handleNavigate('home')
   }
 
+  async function handleLogout() {
+    setTasks([])
+    setGoals([])
+    await logout()
+    notify('Você saiu da sua conta.', 'info')
+  }
 
   // ─── Tasks ───────────────────────────────────────────────────────────────
 
   async function handleToggleTask(task) {
     const nextCompleted = !task.completed
-    const updatedTask = { ...task, completed: nextCompleted }
     try {
-      const response = await fetch('/tasks', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(updatedTask),
+      const savedTask = await apiFetch(`/tasks/${task.id}/toggle`, {
+        method: 'PATCH',
+        defaultErrorMessage: 'Não foi possível atualizar a task.',
       })
-      if (response.status === 401 || response.status === 403) {
-        handleLogout()
-        return
-      }
-      if (!response.ok) throw new Error('Não foi possível atualizar a task.')
-      const savedTask = await response.json()
       setTasks((current) => current.map((item) => (item.id === savedTask.id ? savedTask : item)))
       setError('')
       notify(
@@ -251,6 +150,7 @@ function App() {
         'success'
       )
     } catch (requestError) {
+      if (requestError.isAuthError) return
       setError(requestError.message)
       notify(requestError.message, 'error')
     }
@@ -258,47 +158,40 @@ function App() {
 
   async function handleSaveTask(taskData) {
     const isEdit = Boolean(taskData.id)
-    const response = await fetch('/tasks', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(taskData),
-    })
-    if (response.status === 401 || response.status === 403) {
-      handleLogout()
-      return
+    const endpoint = isEdit ? `/tasks/${taskData.id}` : '/tasks'
+    const method = isEdit ? 'PUT' : 'POST'
+    try {
+      const savedTask = await apiFetch(endpoint, {
+        method,
+        body: JSON.stringify(taskData),
+        defaultErrorMessage: 'Não foi possível salvar a task.',
+      })
+      setTasks((current) => {
+        const exists = current.some((item) => item.id === savedTask.id)
+        return exists
+          ? current.map((item) => (item.id === savedTask.id ? savedTask : item))
+          : [savedTask, ...current]
+      })
+      setError('')
+      notify(
+        isEdit ? `Task "${savedTask.title}" atualizada!` : `Task "${savedTask.title}" criada com sucesso!`,
+        'success'
+      )
+    } catch (requestError) {
+      if (!requestError.isAuthError) {
+        notify(requestError.message, 'error')
+      }
+      throw requestError
     }
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}))
-      const msg = errData.message || 'Não foi possível salvar a task.'
-      notify(msg, 'error')
-      throw new Error(msg)
-    }
-    const savedTask = await response.json()
-    setTasks((current) => {
-      const exists = current.some((item) => item.id === savedTask.id)
-      return exists
-        ? current.map((item) => (item.id === savedTask.id ? savedTask : item))
-        : [savedTask, ...current]
-    })
-    setError('')
-    notify(
-      isEdit ? `Task "${savedTask.title}" atualizada!` : `Task "${savedTask.title}" criada com sucesso!`,
-      'success'
-    )
   }
 
   async function handleDeleteTask(taskId) {
     const taskToDelete = tasks.find((t) => t.id === taskId)
     try {
-      const response = await fetch(`/tasks/${taskId}`, {
+      await apiFetch(`/tasks/${taskId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
+        defaultErrorMessage: 'Não foi possível excluir a task.',
       })
-      if (response.status === 401 || response.status === 403) {
-        handleLogout()
-        return
-      }
-      if (!response.ok) throw new Error('Não foi possível excluir a task.')
       setTasks((current) => current.filter((item) => item.id !== taskId))
       setError('')
       notify(
@@ -306,6 +199,7 @@ function App() {
         'info'
       )
     } catch (requestError) {
+      if (requestError.isAuthError) return
       setError(requestError.message)
       notify(requestError.message, 'error')
     }
@@ -315,50 +209,40 @@ function App() {
 
   async function handleSaveGoal(goalData) {
     const isEdit = Boolean(goalData.id)
-    const response = await fetch('/goals', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(goalData),
-    })
-    if (response.status === 401 || response.status === 403) {
-      handleLogout()
-      return
+    const endpoint = isEdit ? `/goals/${goalData.id}` : '/goals'
+    const method = isEdit ? 'PUT' : 'POST'
+    try {
+      const savedGoal = await apiFetch(endpoint, {
+        method,
+        body: JSON.stringify(goalData),
+        defaultErrorMessage: 'Não foi possível salvar o objetivo.',
+      })
+      setGoals((current) => {
+        const exists = current.some((item) => item.id === savedGoal.id)
+        return exists
+          ? current.map((item) => (item.id === savedGoal.id ? savedGoal : item))
+          : [savedGoal, ...current]
+      })
+      setGoalsError('')
+      notify(
+        isEdit ? `Objetivo "${savedGoal.title}" atualizado!` : `Objetivo "${savedGoal.title}" criado com sucesso!`,
+        'success'
+      )
+    } catch (requestError) {
+      if (!requestError.isAuthError) {
+        notify(requestError.message, 'error')
+      }
+      throw requestError
     }
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}))
-      const msg = errData.message || 'Não foi possível salvar o objetivo.'
-      notify(msg, 'error')
-      throw new Error(msg)
-    }
-    const savedGoal = await response.json()
-    setGoals((current) => {
-      const exists = current.some((item) => item.id === savedGoal.id)
-      return exists
-        ? current.map((item) => (item.id === savedGoal.id ? savedGoal : item))
-        : [savedGoal, ...current]
-    })
-    setGoalsError('')
-    notify(
-      isEdit ? `Objetivo "${savedGoal.title}" atualizado!` : `Objetivo "${savedGoal.title}" criado com sucesso!`,
-      'success'
-    )
   }
 
   async function handleToggleGoal(goal) {
     const nextCompleted = !goal.completed
-    const updatedGoal = { ...goal, completed: nextCompleted }
     try {
-      const response = await fetch('/goals', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(updatedGoal),
+      const savedGoal = await apiFetch(`/goals/${goal.id}/toggle`, {
+        method: 'PATCH',
+        defaultErrorMessage: 'Não foi possível atualizar o objetivo.',
       })
-      if (response.status === 401 || response.status === 403) {
-        handleLogout()
-        return
-      }
-      if (!response.ok) throw new Error('Não foi possível atualizar o objetivo.')
-      const savedGoal = await response.json()
       setGoals((current) => current.map((item) => (item.id === savedGoal.id ? savedGoal : item)))
       setGoalsError('')
       notify(
@@ -368,6 +252,7 @@ function App() {
         'success'
       )
     } catch (requestError) {
+      if (requestError.isAuthError) return
       setGoalsError(requestError.message)
       notify(requestError.message, 'error')
     }
@@ -376,17 +261,11 @@ function App() {
   async function handleDeleteGoal(goalId) {
     const goalToDelete = goals.find((g) => g.id === goalId)
     try {
-      const response = await fetch(`/goals/${goalId}`, {
+      await apiFetch(`/goals/${goalId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
+        defaultErrorMessage: 'Não foi possível excluir o objetivo.',
       })
-      if (response.status === 401 || response.status === 403) {
-        handleLogout()
-        return
-      }
-      if (!response.ok) throw new Error('Não foi possível excluir o objetivo.')
       setGoals((current) => current.filter((item) => item.id !== goalId))
-      // Desvincula nas tasks carregadas localmente
       setTasks((current) =>
         current.map((t) => (t.goal?.id === goalId ? { ...t, goal: null } : t))
       )
@@ -396,6 +275,7 @@ function App() {
         'info'
       )
     } catch (requestError) {
+      if (requestError.isAuthError) return
       setGoalsError(requestError.message)
       notify(requestError.message, 'error')
     }
@@ -406,7 +286,7 @@ function App() {
   if (activePage === 'login') {
     return (
       <>
-        <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+        <LoginPage onNavigate={onNavigate} onLogin={handleLogin} />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </>
     )
@@ -415,9 +295,19 @@ function App() {
   if (activePage === 'register') {
     return (
       <>
-        <RegisterPage onNavigate={handleNavigate} onRegister={handleRegister} />
+        <RegisterPage onNavigate={onNavigate} onRegister={handleRegister} />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </>
+    )
+  }
+
+  if (isCheckingAuth) {
+    return (
+      <div className="login-wrapper">
+        <div className="empty-state">
+          <p>Verificando sessão...</p>
+        </div>
+      </div>
     )
   }
 
@@ -425,7 +315,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <>
-        <LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />
+        <LoginPage onNavigate={onNavigate} onLogin={handleLogin} />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </>
     )
@@ -435,7 +325,7 @@ function App() {
     <div className="app-shell">
       <Sidebar
         activePage={activePage}
-        onNavigate={handleNavigate}
+        onNavigate={onNavigate}
         user={user}
         onLogout={handleLogout}
         pendingTasksCount={tasks.filter((t) => !t.completed).length}
@@ -451,7 +341,7 @@ function App() {
           error={error}
           onToggleTask={handleToggleTask}
           onDeleteTask={handleDeleteTask}
-          onNavigate={handleNavigate}
+          onNavigate={onNavigate}
           todayDate={todayDate}
         />
       )}
@@ -484,6 +374,59 @@ function App() {
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
+  )
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
+function App() {
+  const [activePage, setActivePage] = useState(getInitialPage)
+  const [toasts, setToasts] = useState([])
+
+  const dismissToast = useCallback((id) => {
+    setToasts((current) => current.filter((t) => t.id !== id))
+  }, [])
+
+  const notify = useCallback((message, type = 'success', duration = 4000) => {
+    const id = Date.now() + Math.random().toString(36).slice(2, 6)
+    setToasts((current) => [...current.slice(-4), { id, message, type, duration }])
+  }, [])
+
+  const handleNavigate = useCallback((page) => {
+    setActivePage(page)
+    const hashMap = {
+      home: '#inicio',
+      tasks: '#tasks',
+      goals: '#objetivos',
+      login: '#login',
+      register: '#cadastro',
+    }
+    window.location.hash = hashMap[page] || '#inicio'
+  }, [])
+
+  const handleSessionExpired = useCallback((reason) => {
+    notify(reason, 'info')
+  }, [notify])
+
+  // Sincroniza a página com a hash da URL
+  useEffect(() => {
+    function handleHashChange() {
+      setActivePage(getInitialPage())
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  return (
+    <AuthProvider onSessionExpired={handleSessionExpired} onNavigate={handleNavigate}>
+      <AppContent
+        activePage={activePage}
+        onNavigate={handleNavigate}
+        toasts={toasts}
+        notify={notify}
+        dismissToast={dismissToast}
+      />
+    </AuthProvider>
   )
 }
 
