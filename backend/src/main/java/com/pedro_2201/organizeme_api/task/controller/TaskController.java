@@ -27,9 +27,19 @@ public class TaskController {
         return taskService.getTaskById(id, user);
     }
 
-    @PostMapping // Define o endpoint POST /tasks - cria ou atualiza tarefa do usuário logado
+    @PostMapping // Define o endpoint POST /tasks - cria uma nova tarefa do usuário logado
     public Task salvar(@RequestBody Task task, @AuthenticationPrincipal User user) {
         return taskService.createTask(task, user);
+    }
+
+    @PutMapping("/{id}") // Define o endpoint PUT /tasks/{id} - atualiza uma tarefa existente do usuário logado
+    public Task atualizar(@PathVariable Long id, @RequestBody Task task, @AuthenticationPrincipal User user) {
+        return taskService.updateTask(id, task, user);
+    }
+
+    @PatchMapping("/{id}/toggle") // Define o endpoint PATCH /tasks/{id}/toggle - alterna conclusão da tarefa
+    public Task alternarConclusao(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return taskService.toggleTaskCompleted(id, user);
     }
 
     @DeleteMapping("/{id}") // Define o endpoint DELETE /tasks/{id} - exclui tarefa do usuário logado
