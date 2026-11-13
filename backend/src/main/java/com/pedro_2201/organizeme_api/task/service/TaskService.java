@@ -3,6 +3,9 @@ package com.pedro_2201.organizeme_api.task.service;
 import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
 import com.pedro_2201.organizeme_api.goal.service.GoalService;
+import com.pedro_2201.organizeme_api.task.dto.TaskRequestDTO;
+import com.pedro_2201.organizeme_api.task.dto.TaskResponseDTO;
+import com.pedro_2201.organizeme_api.task.model.Priority;
 import com.pedro_2201.organizeme_api.task.model.Task;
 import com.pedro_2201.organizeme_api.task.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,66 +25,77 @@ public class TaskService {
     private GoalService goalService; // Injeta o serviço de metas para validar a titularidade caso a tarefa seja vinculada a uma meta
 
     // Busca todas as tarefas do usuário autenticado
-    public List<Task> getAllTasks(User user) {
-        return taskRepository.findByUser(user);
+    public List<TaskResponseDTO> getAllTasks(User user) {
+        return taskRepository.findByUser(user)
+                .stream()
+                .map(TaskResponseDTO::fromEntity)
+                .toList();
     }
 
-    // Busca uma tarefa específica garantindo que pertence ao usuário autenticado
-    public Task getTaskById(Long id, User user) {
+    // Busca a entidade Task específica garantindo que pertence ao usuário autenticado (uso interno)
+    public Task getTaskEntityById(Long id, User user) {
         return taskRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada com o ID: " + id));
     }
 
-    // Cria ou atualiza uma tarefa vinculando-a obrigatoriamente ao usuário autenticado
-    public Task createTask(Task task, User user) {
-        // Se for atualização de tarefa existente, valida se realmente pertence ao usuário logado
-        if (task.getId() != null) {
-            Task existingTask = getTaskById(task.getId(), user);
-            task.setCreatedAt(existingTask.getCreatedAt()); // Preserva data de criação original
-        }
+    // Busca uma tarefa específica garantindo que pertence ao usuário autenticado e retorna o DTO
+    public TaskResponseDTO getTaskById(Long id, User user) {
+        return TaskResponseDTO.fromEntity(getTaskEntityById(id, user));
+    }
 
-        // Se a tarefa estiver vinculada a uma meta, valida se essa meta também pertence ao usuário logado
-        if (task.getGoal() != null && task.getGoal().getId() != null) {
-            Goal goal = goalService.getGoalById(task.getGoal().getId(), user);
-            task.setGoal(goal);
-        } else {
-            task.setGoal(null);
-        }
+    // Cria uma nova tarefa vinculando-a obrigatoriamente ao usuário autenticado
+    public TaskResponseDTO createTask(TaskRequestDTO request, User user) {
+        Long goalId = request.resolvedGoalId();
+        Goal goal = goalId != null ? goalService.getGoalEntityById(goalId, user) : null;
 
-        task.setUser(user); // Garante que a tarefa pertence ao usuário autenticado
-        return taskRepository.saveAndFlush(task); // Salva e persiste no banco de dados
+        Task task = Task.builder()
+                .title(request.title())
+                .description(request.description())
+                .completed(Boolean.TRUE.equals(request.completed()))
+                .priority(request.priority() != null ? request.priority() : Priority.MEDIUM)
+                .estimatedMinutes(request.estimatedMinutes() != null ? request.estimatedMinutes() : 0)
+                .spentMinutes(request.spentMinutes() != null ? request.spentMinutes() : 0)
+                .user(user) // Garante que a tarefa pertence ao usuário autenticado
+                .goal(goal)
+                .build();
+
+        Task savedTask = taskRepository.saveAndFlush(task); // Salva e persiste no banco de dados
+        return TaskResponseDTO.fromEntity(savedTask);
     }
 
     // Atualiza os campos de uma tarefa existente garantindo que pertence ao usuário autenticado
-    public Task updateTask(Long id, Task updatedTask, User user) {
-        Task existingTask = getTaskById(id, user);
-        existingTask.setTitle(updatedTask.getTitle());
-        existingTask.setDescription(updatedTask.getDescription());
-        existingTask.setCompleted(updatedTask.isCompleted());
-        existingTask.setPriority(updatedTask.getPriority());
-        existingTask.setEstimatedMinutes(updatedTask.getEstimatedMinutes());
-        existingTask.setSpentMinutes(updatedTask.getSpentMinutes());
+    public TaskResponseDTO updateTask(Long id, TaskRequestDTO request, User user) {
+        Task existingTask = getTaskEntityById(id, user);
+        existingTask.setTitle(request.title());
+        existingTask.setDescription(request.description());
+        existingTask.setCompleted(Boolean.TRUE.equals(request.completed()));
+        existingTask.setPriority(request.priority() != null ? request.priority() : Priority.MEDIUM);
+        existingTask.setEstimatedMinutes(request.estimatedMinutes() != null ? request.estimatedMinutes() : 0);
+        existingTask.setSpentMinutes(request.spentMinutes() != null ? request.spentMinutes() : 0);
 
-        if (updatedTask.getGoal() != null && updatedTask.getGoal().getId() != null) {
-            Goal goal = goalService.getGoalById(updatedTask.getGoal().getId(), user);
+        Long goalId = request.resolvedGoalId();
+        if (goalId != null) {
+            Goal goal = goalService.getGoalEntityById(goalId, user);
             existingTask.setGoal(goal);
         } else {
             existingTask.setGoal(null);
         }
 
-        return taskRepository.saveAndFlush(existingTask);
+        Task savedTask = taskRepository.saveAndFlush(existingTask);
+        return TaskResponseDTO.fromEntity(savedTask);
     }
 
     // Alterna apenas o status de conclusão da tarefa sem reenviar o objeto completo
-    public Task toggleTaskCompleted(Long id, User user) {
-        Task existingTask = getTaskById(id, user);
+    public TaskResponseDTO toggleTaskCompleted(Long id, User user) {
+        Task existingTask = getTaskEntityById(id, user);
         existingTask.setCompleted(!existingTask.isCompleted());
-        return taskRepository.saveAndFlush(existingTask);
+        Task savedTask = taskRepository.saveAndFlush(existingTask);
+        return TaskResponseDTO.fromEntity(savedTask);
     }
 
     // Remove uma tarefa garantindo que pertence ao usuário autenticado
     public void deleteTask(Long id, User user) {
-        Task existingTask = getTaskById(id, user);
+        Task existingTask = getTaskEntityById(id, user);
         taskRepository.delete(existingTask);
     }
 }

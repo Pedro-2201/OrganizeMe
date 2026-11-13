@@ -1,6 +1,5 @@
 package com.pedro_2201.organizeme_api.task.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
 import jakarta.persistence.*;
@@ -44,12 +43,10 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.LAZY) // Relacionamento Muitos-para-Um: muitas tarefas pertencem a um único usuário
     @JoinColumn(name = "user_id", nullable = false) // Chave estrangeira para a tabela users (obrigatório)
-    @JsonIgnoreProperties({"password", "authorities", "goals", "tasks", "hibernateLazyInitializer", "handler"}) // Evita expor dados confidenciais e loops na serialização
     private User user; // Usuário proprietário da tarefa
 
     @ManyToOne(fetch = FetchType.LAZY) // Relacionamento Muitos-para-Um com busca sob demanda (LAZY)
     @JoinColumn(name = "goal_id", nullable = true) // Chave estrangeira para a tabela goals (opcional)
-    @JsonIgnoreProperties({"user", "hibernateLazyInitializer", "handler"}) // Evita redundância de usuário e proxies do Hibernate
     private Goal goal; // Meta à qual a tarefa está vinculada
 
     @CreationTimestamp // Preenche automaticamente a data/hora no momento da criação (INSERT)
