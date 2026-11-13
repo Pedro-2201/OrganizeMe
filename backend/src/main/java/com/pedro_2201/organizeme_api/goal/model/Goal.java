@@ -1,6 +1,5 @@
 package com.pedro_2201.organizeme_api.goal.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.pedro_2201.organizeme_api.auth.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,7 +35,6 @@ public class Goal {
 
     @ManyToOne(fetch = FetchType.LAZY) // Relacionamento Muitos-para-Um: muitas metas pertencem a um único usuário
     @JoinColumn(name = "user_id", nullable = false) // Chave estrangeira para a tabela users (campo obrigatório)
-    @JsonIgnoreProperties({"password", "authorities", "goals", "hibernateLazyInitializer", "handler"}) // Evita expor dados sensíveis e loops na serialização
     private User user; // Usuário proprietário da meta
 
     @CreationTimestamp // Preenche automaticamente a data/hora no momento da criação (INSERT)

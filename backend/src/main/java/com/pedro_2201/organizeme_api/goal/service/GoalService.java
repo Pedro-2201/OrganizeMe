@@ -1,6 +1,8 @@
 package com.pedro_2201.organizeme_api.goal.service;
 
 import com.pedro_2201.organizeme_api.auth.model.User;
+import com.pedro_2201.organizeme_api.goal.dto.GoalRequestDTO;
+import com.pedro_2201.organizeme_api.goal.dto.GoalResponseDTO;
 import com.pedro_2201.organizeme_api.goal.model.Goal;
 import com.pedro_2201.organizeme_api.goal.repository.GoalRepository;
 import com.pedro_2201.organizeme_api.task.model.Task;
@@ -22,47 +24,59 @@ public class GoalService {
     private TaskRepository taskRepository; // Injeta o repositório de tasks para desvincular tarefas ao excluir meta
 
     // Busca todas as metas pertencentes exclusivamente ao usuário autenticado
-    public List<Goal> getAllGoals(User user) {
-        return goalRepository.findByUser(user);
+    public List<GoalResponseDTO> getAllGoals(User user) {
+        return goalRepository.findByUser(user)
+                .stream()
+                .map(GoalResponseDTO::fromEntity)
+                .toList();
     }
 
-    // Busca uma meta específica garantindo que ela pertence ao usuário autenticado
-    public Goal getGoalById(Long id, User user) {
+    // Busca uma entidade Goal específica garantindo que ela pertence ao usuário autenticado (uso interno e entre serviços)
+    public Goal getGoalEntityById(Long id, User user) {
         return goalRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meta não encontrada com o ID: " + id));
     }
 
-    // Cria ou atualiza uma meta associando-a obrigatoriamente ao usuário autenticado
-    public Goal createGoal(Goal goal, User user) {
-        // Se for atualização de meta existente, valida se ela realmente pertence ao usuário logado
-        if (goal.getId() != null) {
-            Goal existingGoal = getGoalById(goal.getId(), user);
-            goal.setCreatedAt(existingGoal.getCreatedAt()); // Preserva a data de criação original
-        }
-        goal.setUser(user); // Vincula o usuário logado como proprietário da meta
-        return goalRepository.saveAndFlush(goal); // Salva e persiste a meta no banco de dados
+    // Busca uma meta específica garantindo que ela pertence ao usuário autenticado e retorna o DTO
+    public GoalResponseDTO getGoalById(Long id, User user) {
+        return GoalResponseDTO.fromEntity(getGoalEntityById(id, user));
+    }
+
+    // Cria uma nova meta associando-a obrigatoriamente ao usuário autenticado
+    public GoalResponseDTO createGoal(GoalRequestDTO request, User user) {
+        Goal goal = Goal.builder()
+                .title(request.title())
+                .description(request.description())
+                .targetDate(request.targetDate())
+                .completed(Boolean.TRUE.equals(request.completed()))
+                .user(user)
+                .build();
+        Goal savedGoal = goalRepository.saveAndFlush(goal); // Salva e persiste a meta no banco de dados
+        return GoalResponseDTO.fromEntity(savedGoal);
     }
 
     // Atualiza os campos de uma meta existente garantindo que pertence ao usuário autenticado
-    public Goal updateGoal(Long id, Goal updatedGoal, User user) {
-        Goal existingGoal = getGoalById(id, user);
-        existingGoal.setTitle(updatedGoal.getTitle());
-        existingGoal.setDescription(updatedGoal.getDescription());
-        existingGoal.setTargetDate(updatedGoal.getTargetDate());
-        existingGoal.setCompleted(updatedGoal.isCompleted());
-        return goalRepository.saveAndFlush(existingGoal);
+    public GoalResponseDTO updateGoal(Long id, GoalRequestDTO request, User user) {
+        Goal existingGoal = getGoalEntityById(id, user);
+        existingGoal.setTitle(request.title());
+        existingGoal.setDescription(request.description());
+        existingGoal.setTargetDate(request.targetDate());
+        existingGoal.setCompleted(Boolean.TRUE.equals(request.completed()));
+        Goal savedGoal = goalRepository.saveAndFlush(existingGoal);
+        return GoalResponseDTO.fromEntity(savedGoal);
     }
 
     // Alterna apenas o status de conclusão da meta sem reenviar o objeto completo
-    public Goal toggleGoalCompleted(Long id, User user) {
-        Goal existingGoal = getGoalById(id, user);
+    public GoalResponseDTO toggleGoalCompleted(Long id, User user) {
+        Goal existingGoal = getGoalEntityById(id, user);
         existingGoal.setCompleted(!existingGoal.isCompleted());
-        return goalRepository.saveAndFlush(existingGoal);
+        Goal savedGoal = goalRepository.saveAndFlush(existingGoal);
+        return GoalResponseDTO.fromEntity(savedGoal);
     }
 
     // Remove uma meta garantindo que ela pertence ao usuário autenticado
     public void deleteGoal(Long id, User user) {
-        Goal existingGoal = getGoalById(id, user);
+        Goal existingGoal = getGoalEntityById(id, user);
         List<Task> linkedTasks = taskRepository.findByGoal(existingGoal);
         for (Task task : linkedTasks) {
             task.setGoal(null);
