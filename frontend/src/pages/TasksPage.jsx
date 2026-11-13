@@ -102,7 +102,7 @@ function TasksPage({
         priority: taskForm.priority || 'MEDIUM',
         estimatedMinutes: Number(taskForm.estimatedMinutes) || 0,
         spentMinutes: Number(taskForm.spentMinutes) || 0,
-        goal: taskForm.goalId ? { id: Number(taskForm.goalId) } : null,
+        goalId: taskForm.goalId ? Number(taskForm.goalId) : null,
       }
       await onCreateTask(payload)
       setTaskForm(emptyFormState)
