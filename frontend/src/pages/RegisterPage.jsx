@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import ThemeToggle from '../components/ThemeToggle'
 
 const strengthLevels = [
   { label: 'Muito fraca', color: '#e11d48' },
@@ -61,6 +62,9 @@ function RegisterPage({ onRegister, onNavigate }) {
 
   return (
     <div className="login-wrapper">
+      <div className="login-theme-toggle">
+        <ThemeToggle />
+      </div>
       <div className="login-container">
         <header className="login-header">
           <div className="brand login-brand">
