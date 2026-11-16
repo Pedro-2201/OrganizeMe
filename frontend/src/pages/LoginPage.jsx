@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import ThemeToggle from '../components/ThemeToggle'
 
 function LoginPage({ onLogin, onNavigate }) {
   const [email, setEmail] = useState('')
@@ -34,6 +35,9 @@ function LoginPage({ onLogin, onNavigate }) {
 
   return (
     <div className="login-wrapper">
+      <div className="login-theme-toggle">
+        <ThemeToggle />
+      </div>
       <div className="login-container">
         <header className="login-header">
           <div className="brand login-brand">
