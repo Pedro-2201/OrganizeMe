@@ -1,45 +1,254 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root {
-  /* Paleta moderna: Deep Teal & Emerald */
-  --brand: #0d9488;
-  --brand-hover: #0f766e;
-  --brand-soft: #f0fdfa;
-  --brand-border: #99f6e4;
-  --brand-glow: rgba(13, 148, 136, 0.16);
+  color-scheme: light dark;
 
-  --emerald: #10b981;
-  --emerald-soft: #ecfdf5;
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
 
-  --amber: #f59e0b;
-  --amber-soft: #fffbeb;
+  /* Pares de cores para tema claro e escuro */
+  --brand-light: #0d9488;
+  --brand-dark: #14b8a6;
+  --brand-hover-light: #0f766e;
+  --brand-hover-dark: #2dd4bf;
+  --brand-soft-light: #f0fdfa;
+  --brand-soft-dark: rgba(20, 184, 166, 0.14);
+  --brand-border-light: #99f6e4;
+  --brand-border-dark: rgba(45, 212, 191, 0.34);
+  --brand-glow-light: rgba(13, 148, 136, 0.16);
+  --brand-glow-dark: rgba(45, 212, 191, 0.24);
 
-  --rose: #e11d48;
-  --rose-soft: #fff1f2;
+  --emerald-light: #10b981;
+  --emerald-dark: #34d399;
+  --emerald-text-light: #047857;
+  --emerald-text-dark: #34d399;
+  --emerald-soft-light: #ecfdf5;
+  --emerald-soft-dark: rgba(16, 185, 129, 0.15);
+  --emerald-border-light: #a7f3d0;
+  --emerald-border-dark: rgba(52, 211, 153, 0.34);
 
-  --ink: #0f172a;
-  --ink-secondary: #334155;
-  --muted: #64748b;
-  --subtle: #94a3b8;
+  --amber-light: #f59e0b;
+  --amber-dark: #fbbf24;
+  --amber-text-light: #b45309;
+  --amber-text-dark: #fbbf24;
+  --amber-soft-light: #fffbeb;
+  --amber-soft-dark: rgba(245, 158, 11, 0.15);
+  --amber-border-light: #fde68a;
+  --amber-border-dark: rgba(251, 191, 36, 0.34);
 
-  --bg-app: #f8fafc;
-  --surface: #ffffff;
-  --surface-hover: #f1f5f9;
-  --line: #e2e8f0;
-  --line-strong: #cbd5e1;
+  --rose-light: #e11d48;
+  --rose-dark: #fb7185;
+  --rose-soft-light: #fff1f2;
+  --rose-soft-dark: rgba(225, 29, 72, 0.16);
+  --rose-border-light: #fecdd3;
+  --rose-border-dark: rgba(251, 113, 133, 0.36);
+
+  --ink-light: #0f172a;
+  --ink-dark: #f1f5f9;
+  --ink-secondary-light: #334155;
+  --ink-secondary-dark: #cbd5e1;
+  --muted-light: #64748b;
+  --muted-dark: #94a3b8;
+  --subtle-light: #64748b;
+  --subtle-dark: #94a3b8;
+
+  --bg-app-light: #f8fafc;
+  --bg-app-dark: #0b1120;
+  --surface-light: #ffffff;
+  --surface-dark: #1e293b;
+  --surface-muted-light: #f8fafc;
+  --surface-muted-dark: #0f172a;
+  --surface-hover-light: #f1f5f9;
+  --surface-hover-dark: #334155;
+  --line-light: #e2e8f0;
+  --line-dark: #334155;
+  --line-strong-light: #cbd5e1;
+  --line-strong-dark: #6e7f96;
+
+  --login-accent-light: #ccfbf1;
+  --login-accent-dark: rgba(13, 148, 136, 0.22);
+  --login-mid-light: #f0fdfa;
+  --login-mid-dark: #0f172a;
+
+  /* Tokens ativos (padrão claro para fallbacks sem light-dark()) */
+  --brand: var(--brand-light);
+  --brand-hover: var(--brand-hover-light);
+  --brand-soft: var(--brand-soft-light);
+  --brand-border: var(--brand-border-light);
+  --brand-glow: var(--brand-glow-light);
+
+  --emerald: var(--emerald-light);
+  --emerald-text: var(--emerald-text-light);
+  --emerald-soft: var(--emerald-soft-light);
+  --emerald-border: var(--emerald-border-light);
+
+  --amber: var(--amber-light);
+  --amber-text: var(--amber-text-light);
+  --amber-soft: var(--amber-soft-light);
+  --amber-border: var(--amber-border-light);
+
+  --rose: var(--rose-light);
+  --rose-soft: var(--rose-soft-light);
+  --rose-border: var(--rose-border-light);
+
+  --ink: var(--ink-light);
+  --ink-secondary: var(--ink-secondary-light);
+  --muted: var(--muted-light);
+  --subtle: var(--subtle-light);
+
+  --bg-app: var(--bg-app-light);
+  --surface: var(--surface-light);
+  --surface-muted: var(--surface-muted-light);
+  --surface-hover: var(--surface-hover-light);
+  --line: var(--line-light);
+  --line-strong: var(--line-strong-light);
+
+  --login-accent: var(--login-accent-light);
+  --login-mid: var(--login-mid-light);
+  --login-bg: radial-gradient(circle at 20% 15%, var(--login-accent) 0%, var(--login-mid) 40%, var(--bg-app) 80%);
 
   --sidebar-bg: #0f172a;
   --sidebar-surface: #1e293b;
   --sidebar-text: #94a3b8;
   --sidebar-active-text: #2dd4bf;
   --sidebar-active-bg: rgba(45, 212, 191, 0.12);
+  --sidebar-border: transparent;
+
+  --backdrop-bg: rgba(15, 23, 42, 0.55);
 
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
-  --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 20px 45px -10px rgba(15, 23, 42, 0.14);
+  --shadow-color-sm: rgba(15, 23, 42, 0.04);
+  --shadow-color-md: rgba(15, 23, 42, 0.06);
+  --shadow-color-lg: rgba(15, 23, 42, 0.14);
+  --shadow-sm: 0 1px 3px var(--shadow-color-sm), 0 1px 2px var(--shadow-color-sm);
+  --shadow-md: 0 10px 25px -5px var(--shadow-color-md), 0 8px 10px -6px var(--shadow-color-sm);
+  --shadow-lg: 0 20px 45px -10px var(--shadow-color-lg);
+
+  accent-color: var(--brand);
+}
+
+/* Fallback para navegadores sem suporte a light-dark() */
+@media (prefers-color-scheme: dark) {
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])) {
+    --brand: var(--brand-dark);
+    --brand-hover: var(--brand-hover-dark);
+    --brand-soft: var(--brand-soft-dark);
+    --brand-border: var(--brand-border-dark);
+    --brand-glow: var(--brand-glow-dark);
+    --emerald: var(--emerald-dark);
+    --emerald-text: var(--emerald-text-dark);
+    --emerald-soft: var(--emerald-soft-dark);
+    --emerald-border: var(--emerald-border-dark);
+    --amber: var(--amber-dark);
+    --amber-text: var(--amber-text-dark);
+    --amber-soft: var(--amber-soft-dark);
+    --amber-border: var(--amber-border-dark);
+    --rose: var(--rose-dark);
+    --rose-soft: var(--rose-soft-dark);
+    --rose-border: var(--rose-border-dark);
+    --ink: var(--ink-dark);
+    --ink-secondary: var(--ink-secondary-dark);
+    --muted: var(--muted-dark);
+    --subtle: var(--subtle-dark);
+    --bg-app: var(--bg-app-dark);
+    --surface: var(--surface-dark);
+    --surface-muted: var(--surface-muted-dark);
+    --surface-hover: var(--surface-hover-dark);
+    --line: var(--line-dark);
+    --line-strong: var(--line-strong-dark);
+    --login-accent: var(--login-accent-dark);
+    --login-mid: var(--login-mid-dark);
+    --sidebar-border: #1e293b;
+    --backdrop-bg: rgba(2, 6, 23, 0.72);
+    --shadow-color-sm: rgba(0, 0, 0, 0.35);
+    --shadow-color-md: rgba(0, 0, 0, 0.45);
+    --shadow-color-lg: rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  --brand: var(--brand-dark);
+  --brand-hover: var(--brand-hover-dark);
+  --brand-soft: var(--brand-soft-dark);
+  --brand-border: var(--brand-border-dark);
+  --brand-glow: var(--brand-glow-dark);
+  --emerald: var(--emerald-dark);
+  --emerald-soft: var(--emerald-soft-dark);
+  --emerald-border: var(--emerald-border-dark);
+  --amber: var(--amber-dark);
+  --amber-soft: var(--amber-soft-dark);
+  --amber-border: var(--amber-border-dark);
+  --rose: var(--rose-dark);
+  --rose-soft: var(--rose-soft-dark);
+  --rose-border: var(--rose-border-dark);
+  --ink: var(--ink-dark);
+  --ink-secondary: var(--ink-secondary-dark);
+  --muted: var(--muted-dark);
+  --subtle: var(--subtle-dark);
+  --bg-app: var(--bg-app-dark);
+  --surface: var(--surface-dark);
+  --surface-muted: var(--surface-muted-dark);
+  --surface-hover: var(--surface-hover-dark);
+  --line: var(--line-dark);
+  --line-strong: var(--line-strong-dark);
+  --login-accent: var(--login-accent-dark);
+  --login-mid: var(--login-mid-dark);
+  --sidebar-border: #1e293b;
+  --backdrop-bg: rgba(2, 6, 23, 0.72);
+  --shadow-color-sm: rgba(0, 0, 0, 0.35);
+  --shadow-color-md: rgba(0, 0, 0, 0.45);
+  --shadow-color-lg: rgba(0, 0, 0, 0.6);
+}
+
+/* Adaptação automática via light-dark() seguindo color-scheme */
+@supports (color: light-dark(white, black)) {
+  :root {
+    --brand: light-dark(var(--brand-light), var(--brand-dark));
+    --brand-hover: light-dark(var(--brand-hover-light), var(--brand-hover-dark));
+    --brand-soft: light-dark(var(--brand-soft-light), var(--brand-soft-dark));
+    --brand-border: light-dark(var(--brand-border-light), var(--brand-border-dark));
+    --brand-glow: light-dark(var(--brand-glow-light), var(--brand-glow-dark));
+
+    --emerald: light-dark(var(--emerald-light), var(--emerald-dark));
+    --emerald-text: light-dark(var(--emerald-text-light), var(--emerald-text-dark));
+    --emerald-soft: light-dark(var(--emerald-soft-light), var(--emerald-soft-dark));
+    --emerald-border: light-dark(var(--emerald-border-light), var(--emerald-border-dark));
+
+    --amber: light-dark(var(--amber-light), var(--amber-dark));
+    --amber-text: light-dark(var(--amber-text-light), var(--amber-text-dark));
+    --amber-soft: light-dark(var(--amber-soft-light), var(--amber-soft-dark));
+    --amber-border: light-dark(var(--amber-border-light), var(--amber-border-dark));
+
+    --rose: light-dark(var(--rose-light), var(--rose-dark));
+    --rose-soft: light-dark(var(--rose-soft-light), var(--rose-soft-dark));
+    --rose-border: light-dark(var(--rose-border-light), var(--rose-border-dark));
+
+    --ink: light-dark(var(--ink-light), var(--ink-dark));
+    --ink-secondary: light-dark(var(--ink-secondary-light), var(--ink-secondary-dark));
+    --muted: light-dark(var(--muted-light), var(--muted-dark));
+    --subtle: light-dark(var(--subtle-light), var(--subtle-dark));
+
+    --bg-app: light-dark(var(--bg-app-light), var(--bg-app-dark));
+    --surface: light-dark(var(--surface-light), var(--surface-dark));
+    --surface-muted: light-dark(var(--surface-muted-light), var(--surface-muted-dark));
+    --surface-hover: light-dark(var(--surface-hover-light), var(--surface-hover-dark));
+    --line: light-dark(var(--line-light), var(--line-dark));
+    --line-strong: light-dark(var(--line-strong-light), var(--line-strong-dark));
+
+    --login-accent: light-dark(var(--login-accent-light), var(--login-accent-dark));
+    --login-mid: light-dark(var(--login-mid-light), var(--login-mid-dark));
+    --sidebar-border: light-dark(transparent, #1e293b);
+    --backdrop-bg: light-dark(rgba(15, 23, 42, 0.55), rgba(2, 6, 23, 0.72));
+    --shadow-color-sm: light-dark(rgba(15, 23, 42, 0.04), rgba(0, 0, 0, 0.35));
+    --shadow-color-md: light-dark(rgba(15, 23, 42, 0.06), rgba(0, 0, 0, 0.45));
+    --shadow-color-lg: light-dark(rgba(15, 23, 42, 0.14), rgba(0, 0, 0, 0.6));
+  }
 }
 
 * {
@@ -77,6 +286,7 @@ button {
   width: 260px;
   flex: 0 0 260px;
   background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   color: #f8fafc;
   display: flex;
   flex-direction: column;
@@ -227,6 +437,45 @@ button {
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.5px;
+}
+
+.sidebar-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.theme-toggle-button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-secondary);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle-button:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.sidebar-theme-toggle {
+  border: 0;
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  box-shadow: none;
+}
+
+.sidebar-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
 }
 
 .logout-button {
@@ -442,14 +691,14 @@ h1 {
 .summary-icon.green {
   background: var(--emerald-soft);
   color: var(--emerald);
-  border: 1px solid #a7f3d0;
+  border: 1px solid var(--emerald-border);
 }
 
 .summary-icon.amber,
 .summary-icon.orange {
   background: var(--amber-soft);
   color: var(--amber);
-  border: 1px solid #fde68a;
+  border: 1px solid var(--amber-border);
 }
 
 .summary-card div span,
@@ -476,7 +725,7 @@ h1 {
 .mini-progress-track {
   width: 100%;
   height: 6px;
-  background: #f1f5f9;
+  background: var(--surface-hover);
   border-radius: 999px;
   overflow: hidden;
   margin-top: 8px;
@@ -492,7 +741,7 @@ h1 {
 .summary-card small {
   margin-left: auto;
   align-self: flex-start;
-  background: #f8fafc;
+  background: var(--surface-muted);
   padding: 4px 9px;
   border-radius: 999px;
   font-size: 11px;
@@ -613,7 +862,7 @@ h1 {
 }
 
 .link-action-btn:hover {
-  background: #ccfbf1;
+  background: var(--brand-border);
 }
 
 .toolbar-controls {
@@ -624,7 +873,7 @@ h1 {
 }
 
 .search-box input {
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   background: var(--surface);
   border-radius: var(--radius-sm);
   padding: 8px 13px;
@@ -643,7 +892,7 @@ h1 {
 .filters {
   display: flex;
   gap: 4px;
-  background: #e2e8f0;
+  background: var(--surface-hover);
   padding: 4px;
   border-radius: 9px;
 }
@@ -695,8 +944,8 @@ h1 {
 }
 
 .task-card.completed {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--surface-muted);
+  border-color: var(--line);
   opacity: 0.85;
 }
 
@@ -775,22 +1024,22 @@ h1 {
 .priority.high {
   color: var(--rose);
   background: var(--rose-soft);
-  border: 1px solid #fecdd3;
+  border: 1px solid var(--rose-border);
 }
 
 .priority.média,
 .priority.media,
 .priority.medium {
-  color: #d97706;
+  color: var(--amber-text);
   background: var(--amber-soft);
-  border: 1px solid #fde68a;
+  border: 1px solid var(--amber-border);
 }
 
 .priority.baixa,
 .priority.low {
-  color: #059669;
+  color: var(--emerald-text);
   background: var(--emerald-soft);
-  border: 1px solid #a7f3d0;
+  border: 1px solid var(--emerald-border);
 }
 
 .goal-tag {
@@ -842,7 +1091,7 @@ h1 {
 
 .empty-state {
   border: 1.5px dashed var(--line-strong);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--surface-muted);
   border-radius: var(--radius-md);
   padding: 44px 24px;
   text-align: center;
@@ -892,7 +1141,7 @@ h1 {
 }
 
 .modal-dialog::backdrop {
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--backdrop-bg);
   backdrop-filter: blur(4px);
 }
 
@@ -936,12 +1185,12 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #ffffff;
+  background: var(--surface);
   color: var(--ink);
   padding: 12px 14px 12px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.16), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--shadow-lg);
   animation: toastSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
@@ -1100,7 +1349,7 @@ a:focus-visible,
 }
 
 .close-button:hover {
-  background: #e2e8f0;
+  background: var(--line);
   color: var(--ink);
 }
 
@@ -1156,8 +1405,8 @@ a:focus-visible,
 
 .request-error {
   background: var(--rose-soft);
-  border: 1px solid #fecdd3;
-  color: #be123c;
+  border: 1px solid var(--rose-border);
+  color: var(--rose);
   border-radius: var(--radius-sm);
   padding: 11px 15px;
   font-size: 13px;
@@ -1200,11 +1449,18 @@ a:focus-visible,
 .login-wrapper {
   min-height: 100vh;
   width: 100%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 20% 15%, #ccfbf1 0%, #f0fdfa 35%, #f8fafc 75%);
+  background: var(--login-bg);
   padding: 24px;
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
 }
 
 .login-container {
@@ -1304,17 +1560,19 @@ a:focus-visible,
   right: 10px;
   background: transparent;
   border: none;
+  color: var(--muted);
   cursor: pointer;
   padding: 4px;
   display: grid;
   place-items: center;
   font-size: 15px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  opacity: 0.75;
+  transition: opacity 0.2s, color 0.2s;
 }
 
 .password-toggle-btn:hover {
   opacity: 1;
+  color: var(--ink);
 }
 
 .remember-me-row {
@@ -1404,6 +1662,9 @@ a:focus-visible,
     flex-direction: column;
     gap: 12px;
     justify-content: center;
+  }
+  .sidebar-footer-actions {
+    flex-direction: column;
   }
   .content {
     padding: 0 4% 48px;
