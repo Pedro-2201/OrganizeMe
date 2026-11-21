@@ -46,7 +46,7 @@ function HomePage({
             type="button"
             onClick={() => onNavigate('goals')}
           >
-            ◈ Ver objetivos
+            <Icon name="target" size={14} /> Ver objetivos
           </button>
         </div>
       </header>
@@ -65,14 +65,14 @@ function HomePage({
             type="button"
             onClick={() => onNavigate('tasks')}
           >
-            <span>+</span> Gerenciar tasks
+            <Icon name="plus" size={16} /> Gerenciar tasks
           </button>
         </div>
       </section>
 
       <section className="summary-grid" aria-label="Resumo geral">
         <article className="summary-card">
-          <span className="summary-icon teal">◷</span>
+          <span className="summary-icon teal"><Icon name="clock" size={20} /></span>
           <div>
             <span>Tasks pendentes</span>
             <strong>{pendingTasks}</strong>
@@ -81,7 +81,7 @@ function HomePage({
         </article>
 
         <article className="summary-card">
-          <span className="summary-icon emerald">✓</span>
+          <span className="summary-icon emerald"><Icon name="check" size={20} /></span>
           <div>
             <span>Tasks concluídas</span>
             <strong>{completedTasks}</strong>
@@ -90,7 +90,7 @@ function HomePage({
         </article>
 
         <article className="summary-card">
-          <span className="summary-icon amber">↗</span>
+          <span className="summary-icon amber"><Icon name="trend-up" size={20} /></span>
           <div className="summary-progress-col">
             <span>Taxa de conclusão</span>
             <strong>{progressPercent}%</strong>
@@ -124,7 +124,7 @@ function HomePage({
               type="button"
               onClick={() => onNavigate('tasks')}
             >
-              Ver todas →
+              Ver todas <Icon name="arrow-right" size={14} />
             </button>
           </div>
 
@@ -149,7 +149,7 @@ function HomePage({
                     }
                     onClick={() => onToggleTask(task)}
                   >
-                    {task.completed ? '✓' : ''}
+                    {task.completed ? <Icon name="check" size={13} strokeWidth={2.5} /> : null}
                   </button>
                   <div className="task-info">
                     <div className="task-title-row">
@@ -161,20 +161,21 @@ function HomePage({
                       </span>
                       {task.goal && (
                         <span className="goal-tag" title="Objetivo vinculado">
-                          ◈ {task.goal.title}
+                          <Icon name="target" size={12} /> {task.goal.title}
                         </span>
                       )}
                     </div>
                     {task.description && <p>{task.description}</p>}
                     <div className="task-meta-row">
                       <span className="due-date">
+                        <Icon name="clock" size={13} />
                         {task.estimatedMinutes > 0
-                          ? `◷ ${task.estimatedMinutes} min estimados${
+                          ? `${task.estimatedMinutes} min estimados${
                               task.spentMinutes > 0
                                 ? ` • ${task.spentMinutes} min gastos`
                                 : ''
                             }`
-                          : '◷ Sem estimativa'}
+                          : 'Sem estimativa'}
                       </span>
                     </div>
                   </div>
@@ -195,7 +196,7 @@ function HomePage({
               ))
             ) : (
               <div className="empty-state">
-                <span className="empty-icon">✓</span>
+                <span className="empty-icon"><Icon name="check" size={22} /></span>
                 <h3>Tudo em dia por aqui!</h3>
                 <p>
                   Nenhuma task pendente no momento. Aproveite para criar novas
@@ -219,7 +220,7 @@ function HomePage({
               type="button"
               onClick={() => onNavigate('goals')}
             >
-              Gerenciar →
+              Gerenciar <Icon name="arrow-right" size={14} />
             </button>
           </div>
 
@@ -257,7 +258,7 @@ function HomePage({
               })
             ) : (
               <div className="empty-state compact">
-                <span className="empty-icon">◈</span>
+                <span className="empty-icon"><Icon name="target" size={22} /></span>
                 <h3>Sem objetivos ativos</h3>
                 <p>Defina objetivos para conectar suas tarefas diárias.</p>
               </div>
