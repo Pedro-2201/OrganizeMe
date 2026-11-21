@@ -42,11 +42,7 @@ function LoginPage({ onLogin, onNavigate }) {
         <header className="login-header">
           <div className="brand login-brand">
             <span className="brand-mark">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+              <Icon name="layers" size={18} strokeWidth={2.5} />
             </span>
             <span>Organize<span className="brand-accent">Me</span></span>
           </div>
@@ -82,7 +78,7 @@ function LoginPage({ onLogin, onNavigate }) {
               placeholder="seu.email@exemplo.com"
             />
             <div id="login-email-error" className="field-error-msg">
-              <span aria-hidden="true">⚠</span> Informe um endereço de email válido.
+              <Icon name="alert" size={13} /> Informe um endereço de email válido.
             </div>
           </div>
 

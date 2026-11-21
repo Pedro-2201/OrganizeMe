@@ -1,3 +1,4 @@
+import Icon from './Icon'
 import ThemeToggle from './ThemeToggle'
 
 function Sidebar({
@@ -22,11 +23,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand">
         <span className="brand-mark">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
-          </svg>
+          <Icon name="layers" size={18} strokeWidth={2.5} />
         </span>
         <span>Organize<span className="brand-accent">Me</span></span>
       </div>
@@ -43,12 +40,7 @@ function Sidebar({
           }}
         >
           <span className="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="14" width="7" height="7" rx="1.5" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" />
-            </svg>
+            <Icon name="grid" size={18} />
           </span>
           <span className="nav-label">Visão geral</span>
         </a>
@@ -62,10 +54,7 @@ function Sidebar({
           }}
         >
           <span className="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-            </svg>
+            <Icon name="check-square" size={18} />
           </span>
           <span className="nav-label">Minhas tasks</span>
           {pendingTasksCount > 0 && (
@@ -84,11 +73,7 @@ function Sidebar({
           }}
         >
           <span className="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="6" />
-              <circle cx="12" cy="12" r="2" />
-            </svg>
+            <Icon name="target" size={18} />
           </span>
           <span className="nav-label">Objetivos</span>
           {activeGoalsCount > 0 && (
@@ -116,11 +101,7 @@ function Sidebar({
             title="Sair da conta"
             onClick={onLogout}
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
+            <Icon name="logout" size={17} />
           </button>
         </div>
       </div>

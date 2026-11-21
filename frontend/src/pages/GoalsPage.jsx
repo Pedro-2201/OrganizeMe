@@ -134,13 +134,13 @@ function GoalsPage({
           type="button"
           onClick={openNewGoalModal}
         >
-          <span>+</span> Novo objetivo
+          <Icon name="plus" size={16} /> Novo objetivo
         </button>
       </section>
 
       <section className="summary-grid" aria-label="Resumo dos objetivos">
         <article className="summary-card">
-          <span className="summary-icon teal">◈</span>
+          <span className="summary-icon teal"><Icon name="target" size={20} /></span>
           <div>
             <span>Objetivos ativos</span>
             <strong>{activeGoals}</strong>
@@ -148,7 +148,7 @@ function GoalsPage({
           <small>em andamento</small>
         </article>
         <article className="summary-card">
-          <span className="summary-icon emerald">✓</span>
+          <span className="summary-icon emerald"><Icon name="check" size={20} /></span>
           <div>
             <span>Concluídos</span>
             <strong>{completedGoals}</strong>
@@ -156,7 +156,7 @@ function GoalsPage({
           <small>alcançados</small>
         </article>
         <article className="summary-card">
-          <span className="summary-icon amber">↗</span>
+          <span className="summary-icon amber"><Icon name="trend-up" size={20} /></span>
           <div className="summary-progress-col">
             <span>Taxa de conclusão</span>
             <strong>{progressPercent}%</strong>
@@ -243,7 +243,7 @@ function GoalsPage({
                     }
                     onClick={() => onToggleGoal(goal)}
                   >
-                    {goal.completed ? '✓' : ''}
+                    {goal.completed ? <Icon name="check" size={13} strokeWidth={2.5} /> : null}
                   </button>
 
                   <div className="task-info">
@@ -257,23 +257,30 @@ function GoalsPage({
                               : 'low'
                           }`}
                         >
-                          {isOverdue(goal.targetDate) && !goal.completed
-                            ? '⚠ Atrasado'
-                            : `📅 ${formatDate(goal.targetDate)}`}
+                          {isOverdue(goal.targetDate) && !goal.completed ? (
+                            <>
+                              <Icon name="alert" size={12} /> Atrasado
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="calendar" size={12} /> {formatDate(goal.targetDate)}
+                            </>
+                          )}
                         </span>
                       )}
                       {linkedTasks.length > 0 && (
                         <span className="goal-tag">
-                          ✓ {completedLinked}/{linkedTasks.length} tasks ({taskProgress}%)
+                          <Icon name="check" size={12} /> {completedLinked}/{linkedTasks.length} tasks ({taskProgress}%)
                         </span>
                       )}
                     </div>
                     {goal.description && <p>{goal.description}</p>}
                     <div className="task-meta-row">
                       <span className="due-date">
+                        <Icon name="clock" size={13} />
                         {goal.targetDate
-                          ? `◷ Prazo final: ${formatDate(goal.targetDate)}`
-                          : '◷ Sem prazo definido'}
+                          ? `Prazo final: ${formatDate(goal.targetDate)}`
+                          : 'Sem prazo definido'}
                       </span>
                     </div>
                   </div>
@@ -305,7 +312,7 @@ function GoalsPage({
             })
           ) : (
             <div className="empty-state">
-              <span className="empty-icon">◈</span>
+              <span className="empty-icon"><Icon name="target" size={22} /></span>
               <h3>Nenhum objetivo encontrado</h3>
               <p>
                 Adicione um novo objetivo no botão acima ou altere o filtro selecionado.

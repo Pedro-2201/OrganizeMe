@@ -537,6 +537,9 @@ button {
 }
 
 .ghost-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink-secondary);
@@ -851,6 +854,9 @@ h1 {
 }
 
 .link-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 0;
   background: var(--brand-soft);
   color: var(--brand);
@@ -1013,6 +1019,9 @@ h1 {
 }
 
 .priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10.5px;
   font-weight: 700;
   border-radius: 6px;
@@ -1043,6 +1052,9 @@ h1 {
 }
 
 .goal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   font-weight: 600;
   color: var(--brand-hover);
@@ -1053,6 +1065,9 @@ h1 {
 }
 
 .due-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--subtle);
   font-size: 12px;
   font-weight: 500;
@@ -1429,6 +1444,11 @@ a:focus-visible,
   font-size: 12px;
   font-weight: 500;
   margin-top: 5px;
+}
+
+.field-error-msg svg {
+  vertical-align: -2px;
+  margin-right: 4px;
 }
 
 .input-group input:user-invalid {

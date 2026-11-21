@@ -135,13 +135,13 @@ function TasksPage({
           type="button"
           onClick={openNewTaskModal}
         >
-          <span>+</span> Nova task
+          <Icon name="plus" size={16} /> Nova task
         </button>
       </section>
 
       <section className="summary-grid" aria-label="Resumo das tasks">
         <article className="summary-card">
-          <span className="summary-icon teal">◷</span>
+          <span className="summary-icon teal"><Icon name="clock" size={20} /></span>
           <div>
             <span>Tasks pendentes</span>
             <strong>{pendingTasks}</strong>
@@ -149,7 +149,7 @@ function TasksPage({
           <small>para concluir</small>
         </article>
         <article className="summary-card">
-          <span className="summary-icon emerald">✓</span>
+          <span className="summary-icon emerald"><Icon name="check" size={20} /></span>
           <div>
             <span>Concluídas</span>
             <strong>{completedTasks}</strong>
@@ -157,7 +157,7 @@ function TasksPage({
           <small>finalizadas</small>
         </article>
         <article className="summary-card">
-          <span className="summary-icon amber">↗</span>
+          <span className="summary-icon amber"><Icon name="trend-up" size={20} /></span>
           <div className="summary-progress-col">
             <span>Progresso geral</span>
             <strong>{progressPercent}%</strong>
@@ -235,7 +235,7 @@ function TasksPage({
                   }
                   onClick={() => onToggleTask(task)}
                 >
-                  {task.completed ? '✓' : ''}
+                  {task.completed ? <Icon name="check" size={13} strokeWidth={2.5} /> : null}
                 </button>
 
                 <div className="task-info">
@@ -248,20 +248,21 @@ function TasksPage({
                     </span>
                     {task.goal && (
                       <span className="goal-tag" title="Objetivo vinculado">
-                        ◈ {task.goal.title}
+                        <Icon name="target" size={12} /> {task.goal.title}
                       </span>
                     )}
                   </div>
                   {task.description && <p>{task.description}</p>}
                   <div className="task-meta-row">
                     <span className="due-date">
+                      <Icon name="clock" size={13} />
                       {task.estimatedMinutes > 0
-                        ? `◷ ${task.estimatedMinutes} min estimados${
+                        ? `${task.estimatedMinutes} min estimados${
                             task.spentMinutes > 0
                               ? ` • ${task.spentMinutes} min gastos`
                               : ''
                           }`
-                        : '◷ Sem estimativa'}
+                        : 'Sem estimativa'}
                     </span>
                   </div>
                 </div>
@@ -292,7 +293,7 @@ function TasksPage({
             ))
           ) : (
             <div className="empty-state">
-              <span className="empty-icon">✓</span>
+              <span className="empty-icon"><Icon name="check" size={22} /></span>
               <h3>Nenhuma task encontrada</h3>
               <p>
                 Adicione uma nova task no botão acima ou ajuste sua busca/filtro.
