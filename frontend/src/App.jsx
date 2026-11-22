@@ -30,18 +30,28 @@ function getTodayFormatted() {
 
 // ─── Conteúdo Principal ─────────────────────────────────────────────────────
 
-function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
+function AppContent({ activePage, onNavigate, notify }) {
   const { user, isAuthenticated, isCheckingAuth, login, register, logout } = useAuth()
   const [tasks, setTasks] = useState([])
   const [goals, setGoals] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingGoals, setIsLoadingGoals] = useState(false)
-  const [error, setError] = useState('')
-  const [goalsError, setGoalsError] = useState('')
+  const [tasksLoadError, setTasksLoadError] = useState('')
+  const [goalsLoadError, setGoalsLoadError] = useState('')
+  const [tasksReloadKey, setTasksReloadKey] = useState(0)
+  const [goalsReloadKey, setGoalsReloadKey] = useState(0)
 
   const todayDate = getTodayFormatted()
 
-  // Carrega tasks quando autenticado
+  const retryLoadTasks = useCallback(() => {
+    setTasksReloadKey((current) => current + 1)
+  }, [])
+
+  const retryLoadGoals = useCallback(() => {
+    setGoalsReloadKey((current) => current + 1)
+  }, [])
+
+  // Carrega tasks quando autenticado (ou ao tentar novamente)
   useEffect(() => {
     if (!isAuthenticated) return
     let active = true
@@ -53,11 +63,11 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
         })
         if (active && data) {
           setTasks(data)
-          setError('')
+          setTasksLoadError('')
         }
       } catch (requestError) {
         if (active && !requestError.isAuthError) {
-          setError(requestError.message)
+          setTasksLoadError(requestError.message)
         }
       } finally {
         if (active) {
@@ -69,9 +79,9 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
     return () => {
       active = false
     }
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.email, tasksReloadKey])
 
-  // Carrega goals quando autenticado
+  // Carrega goals quando autenticado (ou ao tentar novamente)
   useEffect(() => {
     if (!isAuthenticated) return
     let active = true
@@ -83,11 +93,11 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
         })
         if (active && data) {
           setGoals(data)
-          setGoalsError('')
+          setGoalsLoadError('')
         }
       } catch (requestError) {
         if (active && !requestError.isAuthError) {
-          setGoalsError(requestError.message)
+          setGoalsLoadError(requestError.message)
         }
       } finally {
         if (active) {
@@ -99,35 +109,27 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
     return () => {
       active = false
     }
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.email, goalsReloadKey])
 
   // ─── Auth ────────────────────────────────────────────────────────────────
 
   async function handleLogin(credentials) {
-    try {
-      const userData = await login(credentials)
-      notify(`Bem-vindo de volta, ${userData.name.split(' ')[0]}!`, 'success')
-      onNavigate('home')
-    } catch (err) {
-      notify(err.message, 'error')
-      throw err
-    }
+    const userData = await login(credentials)
+    notify(`Bem-vindo de volta, ${userData.name.split(' ')[0]}!`, 'success')
+    onNavigate('home')
   }
 
   async function handleRegister(userInfo) {
-    try {
-      await register(userInfo)
-      notify('Conta criada com sucesso! Aproveite o OrganizeMe.', 'success')
-      onNavigate('home')
-    } catch (err) {
-      notify(err.message, 'error')
-      throw err
-    }
+    await register(userInfo)
+    notify('Conta criada com sucesso! Aproveite o OrganizeMe.', 'success')
+    onNavigate('home')
   }
 
   async function handleLogout() {
     setTasks([])
     setGoals([])
+    setTasksLoadError('')
+    setGoalsLoadError('')
     await logout()
     notify('Você saiu da sua conta.', 'info')
   }
@@ -142,7 +144,6 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
         defaultErrorMessage: 'Não foi possível atualizar a task.',
       })
       setTasks((current) => current.map((item) => (item.id === savedTask.id ? savedTask : item)))
-      setError('')
       notify(
         nextCompleted
           ? `✓ "${task.title}" marcada como concluída!`
@@ -151,7 +152,6 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
       )
     } catch (requestError) {
       if (requestError.isAuthError) return
-      setError(requestError.message)
       notify(requestError.message, 'error')
     }
   }
@@ -160,29 +160,21 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
     const isEdit = Boolean(taskData.id)
     const endpoint = isEdit ? `/tasks/${taskData.id}` : '/tasks'
     const method = isEdit ? 'PUT' : 'POST'
-    try {
-      const savedTask = await apiFetch(endpoint, {
-        method,
-        body: JSON.stringify(taskData),
-        defaultErrorMessage: 'Não foi possível salvar a task.',
-      })
-      setTasks((current) => {
-        const exists = current.some((item) => item.id === savedTask.id)
-        return exists
-          ? current.map((item) => (item.id === savedTask.id ? savedTask : item))
-          : [savedTask, ...current]
-      })
-      setError('')
-      notify(
-        isEdit ? `Task "${savedTask.title}" atualizada!` : `Task "${savedTask.title}" criada com sucesso!`,
-        'success'
-      )
-    } catch (requestError) {
-      if (!requestError.isAuthError) {
-        notify(requestError.message, 'error')
-      }
-      throw requestError
-    }
+    const savedTask = await apiFetch(endpoint, {
+      method,
+      body: JSON.stringify(taskData),
+      defaultErrorMessage: 'Não foi possível salvar a task.',
+    })
+    setTasks((current) => {
+      const exists = current.some((item) => item.id === savedTask.id)
+      return exists
+        ? current.map((item) => (item.id === savedTask.id ? savedTask : item))
+        : [savedTask, ...current]
+    })
+    notify(
+      isEdit ? `Task "${savedTask.title}" atualizada!` : `Task "${savedTask.title}" criada com sucesso!`,
+      'success'
+    )
   }
 
   async function handleDeleteTask(taskId) {
@@ -193,14 +185,12 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
         defaultErrorMessage: 'Não foi possível excluir a task.',
       })
       setTasks((current) => current.filter((item) => item.id !== taskId))
-      setError('')
       notify(
         taskToDelete ? `Task "${taskToDelete.title}" excluída.` : 'Task excluída com sucesso.',
         'info'
       )
     } catch (requestError) {
       if (requestError.isAuthError) return
-      setError(requestError.message)
       notify(requestError.message, 'error')
     }
   }
@@ -211,29 +201,21 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
     const isEdit = Boolean(goalData.id)
     const endpoint = isEdit ? `/goals/${goalData.id}` : '/goals'
     const method = isEdit ? 'PUT' : 'POST'
-    try {
-      const savedGoal = await apiFetch(endpoint, {
-        method,
-        body: JSON.stringify(goalData),
-        defaultErrorMessage: 'Não foi possível salvar o objetivo.',
-      })
-      setGoals((current) => {
-        const exists = current.some((item) => item.id === savedGoal.id)
-        return exists
-          ? current.map((item) => (item.id === savedGoal.id ? savedGoal : item))
-          : [savedGoal, ...current]
-      })
-      setGoalsError('')
-      notify(
-        isEdit ? `Objetivo "${savedGoal.title}" atualizado!` : `Objetivo "${savedGoal.title}" criado com sucesso!`,
-        'success'
-      )
-    } catch (requestError) {
-      if (!requestError.isAuthError) {
-        notify(requestError.message, 'error')
-      }
-      throw requestError
-    }
+    const savedGoal = await apiFetch(endpoint, {
+      method,
+      body: JSON.stringify(goalData),
+      defaultErrorMessage: 'Não foi possível salvar o objetivo.',
+    })
+    setGoals((current) => {
+      const exists = current.some((item) => item.id === savedGoal.id)
+      return exists
+        ? current.map((item) => (item.id === savedGoal.id ? savedGoal : item))
+        : [savedGoal, ...current]
+    })
+    notify(
+      isEdit ? `Objetivo "${savedGoal.title}" atualizado!` : `Objetivo "${savedGoal.title}" criado com sucesso!`,
+      'success'
+    )
   }
 
   async function handleToggleGoal(goal) {
@@ -244,7 +226,6 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
         defaultErrorMessage: 'Não foi possível atualizar o objetivo.',
       })
       setGoals((current) => current.map((item) => (item.id === savedGoal.id ? savedGoal : item)))
-      setGoalsError('')
       notify(
         nextCompleted
           ? `🎉 Parabéns! Objetivo "${goal.title}" concluído!`
@@ -253,7 +234,6 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
       )
     } catch (requestError) {
       if (requestError.isAuthError) return
-      setGoalsError(requestError.message)
       notify(requestError.message, 'error')
     }
   }
@@ -269,14 +249,12 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
       setTasks((current) =>
         current.map((t) => (t.goal?.id === goalId ? { ...t, goal: null } : t))
       )
-      setGoalsError('')
       notify(
         goalToDelete ? `Objetivo "${goalToDelete.title}" excluído.` : 'Objetivo excluído.',
         'info'
       )
     } catch (requestError) {
       if (requestError.isAuthError) return
-      setGoalsError(requestError.message)
       notify(requestError.message, 'error')
     }
   }
@@ -284,21 +262,11 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
   // ─── Render ──────────────────────────────────────────────────────────────
 
   if (activePage === 'login') {
-    return (
-      <>
-        <LoginPage onNavigate={onNavigate} onLogin={handleLogin} />
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-      </>
-    )
+    return <LoginPage onNavigate={onNavigate} onLogin={handleLogin} />
   }
 
   if (activePage === 'register') {
-    return (
-      <>
-        <RegisterPage onNavigate={onNavigate} onRegister={handleRegister} />
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-      </>
-    )
+    return <RegisterPage onNavigate={onNavigate} onRegister={handleRegister} />
   }
 
   if (isCheckingAuth) {
@@ -313,12 +281,7 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
 
   // Redireciona para login se não autenticado ao tentar acessar páginas protegidas
   if (!isAuthenticated) {
-    return (
-      <>
-        <LoginPage onNavigate={onNavigate} onLogin={handleLogin} />
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-      </>
-    )
+    return <LoginPage onNavigate={onNavigate} onLogin={handleLogin} />
   }
 
   return (
@@ -338,7 +301,10 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
           tasks={tasks}
           goals={goals}
           isLoading={isLoading}
-          error={error}
+          tasksError={tasksLoadError}
+          goalsError={goalsLoadError}
+          onRetryTasks={retryLoadTasks}
+          onRetryGoals={retryLoadGoals}
           onToggleTask={handleToggleTask}
           onDeleteTask={handleDeleteTask}
           onNavigate={onNavigate}
@@ -351,7 +317,8 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
           tasks={tasks}
           goals={goals}
           isLoading={isLoading}
-          error={error}
+          error={tasksLoadError}
+          onRetry={retryLoadTasks}
           onToggleTask={handleToggleTask}
           onCreateTask={handleSaveTask}
           onDeleteTask={handleDeleteTask}
@@ -364,15 +331,14 @@ function AppContent({ activePage, onNavigate, toasts, notify, dismissToast }) {
           goals={goals}
           tasks={tasks}
           isLoading={isLoadingGoals}
-          error={goalsError}
+          error={goalsLoadError}
+          onRetry={retryLoadGoals}
           onCreateGoal={handleSaveGoal}
           onToggleGoal={handleToggleGoal}
           onDeleteGoal={handleDeleteGoal}
           todayDate={todayDate}
         />
       )}
-
-      <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
@@ -387,7 +353,7 @@ function App() {
     setToasts((current) => current.filter((t) => t.id !== id))
   }, [])
 
-  const notify = useCallback((message, type = 'success', duration = 4000) => {
+  const notify = useCallback((message, type = 'success', duration) => {
     const id = Date.now() + Math.random().toString(36).slice(2, 6)
     setToasts((current) => [...current.slice(-4), { id, message, type, duration }])
   }, [])
@@ -422,10 +388,9 @@ function App() {
       <AppContent
         activePage={activePage}
         onNavigate={handleNavigate}
-        toasts={toasts}
         notify={notify}
-        dismissToast={dismissToast}
       />
+      <Toast toasts={toasts} onDismiss={dismissToast} />
     </AuthProvider>
   )
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Icon from '../components/Icon'
+import InlineAlert from '../components/InlineAlert'
 import Modal from '../components/Modal'
 
 const filters = [
@@ -38,6 +39,7 @@ function GoalsPage({
   tasks = [],
   isLoading,
   error,
+  onRetry,
   onCreateGoal,
   onToggleGoal,
   onDeleteGoal,
@@ -107,7 +109,9 @@ function GoalsPage({
       setGoalForm(emptyGoalState)
       setIsFormOpen(false)
     } catch (submitError) {
-      setFormError(submitError.message)
+      if (!submitError.isAuthError) {
+        setFormError(submitError.message)
+      }
     } finally {
       setIsSaving(false)
     }
@@ -172,11 +176,11 @@ function GoalsPage({
       </section>
 
       <section className="tasks-section">
-        {(error || formError) && (
-          <p className="request-error" role="alert">
-            {error || formError}
-          </p>
-        )}
+        <InlineAlert
+          message={error}
+          actionLabel="Tentar novamente"
+          onAction={onRetry}
+        />
 
         <div className="section-header">
           <div>
@@ -343,6 +347,11 @@ function GoalsPage({
                 <Icon name="close" size={18} />
               </button>
             </div>
+
+            <InlineAlert
+              message={formError}
+              onDismiss={() => setFormError('')}
+            />
 
             <label htmlFor="goal-title">Título</label>
             <input

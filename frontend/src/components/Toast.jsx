@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Icon from './Icon'
 
 const toastIconNames = {
@@ -7,20 +7,46 @@ const toastIconNames = {
   info: 'info',
 }
 
+const supportsAriaNotify =
+  typeof document !== 'undefined' && typeof document.ariaNotify === 'function'
+
 function ToastItem({ toast, onDismiss }) {
+  const [isPaused, setIsPaused] = useState(false)
+  const duration = toast.duration || (toast.type === 'error' ? 6000 : 4000)
+
   useEffect(() => {
+    if (supportsAriaNotify && toast.message) {
+      document.ariaNotify(toast.message)
+    }
+  }, [toast.message])
+
+  useEffect(() => {
+    if (isPaused) return
     const timer = setTimeout(() => {
       onDismiss(toast.id)
-    }, toast.duration || 4000)
+    }, duration)
     return () => clearTimeout(timer)
-  }, [toast, onDismiss])
+  }, [toast.id, duration, isPaused, onDismiss])
 
   const iconName = toastIconNames[toast.type] || 'info'
+  const liveRole = supportsAriaNotify
+    ? undefined
+    : toast.type === 'error'
+      ? 'alert'
+      : 'status'
 
   return (
     <div
       className={`toast toast-${toast.type || 'success'}`}
-      role="status"
+      role={liveRole}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsPaused(false)
+        }
+      }}
     >
       <span className="toast-icon" aria-hidden="true">
         <Icon name={iconName} size={18} strokeWidth={2.5} />
@@ -41,13 +67,12 @@ function ToastItem({ toast, onDismiss }) {
 }
 
 function Toast({ toasts = [], onDismiss }) {
-  if (!toasts.length) return null
-
   return (
     <div
       className="toast-region"
+      role="region"
       aria-label="Notificações do sistema"
-      aria-live="polite"
+      aria-live={supportsAriaNotify ? undefined : 'polite'}
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
