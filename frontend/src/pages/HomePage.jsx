@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Icon from '../components/Icon'
+import InlineAlert from '../components/InlineAlert'
 
 const priorityLabels = {
   LOW: 'Baixa',
@@ -13,7 +14,10 @@ function HomePage({
   tasks,
   goals = [],
   isLoading,
-  error,
+  tasksError,
+  goalsError,
+  onRetryTasks,
+  onRetryGoals,
   onToggleTask,
   onDeleteTask,
   onNavigate,
@@ -107,11 +111,11 @@ function HomePage({
 
       <div className="dashboard-columns">
         <section className="tasks-section">
-          {error && (
-            <p className="request-error" role="alert">
-              {error}
-            </p>
-          )}
+          <InlineAlert
+            message={tasksError}
+            actionLabel="Tentar novamente"
+            onAction={onRetryTasks}
+          />
           <div className="section-header">
             <div>
               <h2>
@@ -208,6 +212,11 @@ function HomePage({
         </section>
 
         <section className="tasks-section side-panel">
+          <InlineAlert
+            message={goalsError}
+            actionLabel="Tentar novamente"
+            onAction={onRetryGoals}
+          />
           <div className="section-header">
             <div>
               <h2>

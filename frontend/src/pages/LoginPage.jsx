@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import InlineAlert from '../components/InlineAlert'
 import ThemeToggle from '../components/ThemeToggle'
 
 function LoginPage({ onLogin, onNavigate }) {
@@ -50,11 +51,11 @@ function LoginPage({ onLogin, onNavigate }) {
           <p className="subtitle">Entre para gerenciar suas tarefas e objetivos.</p>
         </header>
 
-        {errorMessage && (
-          <div className="request-error login-error" role="alert">
-            {errorMessage}
-          </div>
-        )}
+        <InlineAlert
+          message={errorMessage}
+          className="login-error"
+          onDismiss={() => setErrorMessage('')}
+        />
 
         <form className="login-form" method="post" onSubmit={handleSubmit}>
           <div className="input-group">

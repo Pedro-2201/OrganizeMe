@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Icon from '../components/Icon'
+import InlineAlert from '../components/InlineAlert'
 import Modal from '../components/Modal'
 
 const filters = [
@@ -31,6 +32,7 @@ function TasksPage({
   goals = [],
   isLoading,
   error,
+  onRetry,
   onToggleTask,
   onCreateTask,
   onDeleteTask,
@@ -108,7 +110,9 @@ function TasksPage({
       setTaskForm(emptyFormState)
       setIsFormOpen(false)
     } catch (submitError) {
-      setFormError(submitError.message)
+      if (!submitError.isAuthError) {
+        setFormError(submitError.message)
+      }
     } finally {
       setIsSaving(false)
     }
@@ -173,11 +177,11 @@ function TasksPage({
       </section>
 
       <section className="tasks-section">
-        {(error || formError) && (
-          <p className="request-error" role="alert">
-            {error || formError}
-          </p>
-        )}
+        <InlineAlert
+          message={error}
+          actionLabel="Tentar novamente"
+          onAction={onRetry}
+        />
 
         <div className="section-header">
           <div>
@@ -326,6 +330,11 @@ function TasksPage({
                 <Icon name="close" size={18} />
               </button>
             </div>
+
+            <InlineAlert
+              message={formError}
+              onDismiss={() => setFormError('')}
+            />
 
             <label htmlFor="title">Título</label>
             <input
