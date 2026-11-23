@@ -22,6 +22,7 @@
 - [Principais Funcionalidades](#principais-funcionalidades)
 - [Stack Tecnológica](#stack-tecnológica)
 - [Arquitetura e Estrutura de Pastas](#arquitetura-e-estrutura-de-pastas)
+- [Documentação dos Módulos](#documentação-dos-módulos)
 - [Como Executar o Projeto](#como-executar-o-projeto)
   - [Opção 1: Com Docker Compose (Recomendado)](#opção-1-com-docker-compose-recomendado)
   - [Opção 2: Execução Local (Desenvolvimento)](#opção-2-execução-local-desenvolvimento)
@@ -55,7 +56,8 @@ A aplicação combina uma API RESTful stateless construída com **Spring Boot** 
   - Resumo executivo com contadores de tarefas pendentes/concluídas, taxa de conclusão geral, lista de prioridades ordenadas por urgência e acompanhamento rápido das metas ativas.
 - **UX & Acessibilidade**
   - Modais acessíveis construídos sobre `<dialog>` nativo (gerenciamento de foco, `Esc` e proteção contra perda de dados ao arrastar seleção).
-  - Diálogo de confirmação antes de excluir itens, medidor de força de senha no cadastro, validação nativa com `:user-invalid`/`:user-valid` e sistema de notificações flutuantes (multi-toast empilhável).
+  - Diálogo de confirmação antes de excluir itens, alertas contextuais (`InlineAlert`), ícones SVG centralizados (`Icon.jsx`), medidor de força de senha no cadastro, validação nativa com `:user-invalid`/`:user-valid` e notificação via `Toast` único na raiz.
+  - **Modo Escuro (Dark Mode):** alternância entre tema claro e escuro (`ThemeToggle`) com detecção da preferência do sistema, persistência e script síncrono preventivo contra flash visual (FOUC).
 
 ---
 
@@ -100,23 +102,36 @@ OrganizeMe/
 │   ├── src/main/resources/
 │   │   └── application.properties
 │   ├── Dockerfile               # Build multi-stage (Maven + Eclipse Temurin JRE 21)
+│   ├── README.md                # Guia técnico do backend (execução local, env vars, Swagger)
 │   └── pom.xml
 ├── frontend/
+│   ├── public/
+│   │   └── theme-init.js        # Inicialização síncrona do tema claro/escuro (anti-FOUC)
 │   ├── src/
-│   │   ├── components/          # ConfirmDialog, Icon, Modal, Sidebar, Toast
+│   │   ├── components/          # ConfirmDialog, Icon, InlineAlert, Modal, Sidebar, ThemeToggle, Toast
 │   │   ├── contexts/            # AuthContext
-│   │   ├── hooks/               # useAuth
+│   │   ├── hooks/               # useAuth, useTheme
 │   │   ├── pages/               # HomePage, TasksPage, GoalsPage, LoginPage, RegisterPage
 │   │   ├── services/            # api.js (cliente HTTP centralizado com credentials: 'include')
 │   │   ├── App.jsx
 │   │   └── App.css
 │   ├── Dockerfile               # Build multi-stage (Node 20 + Nginx Alpine)
 │   ├── nginx.conf               # Proxy reverso para API/Swagger + headers de segurança
+│   ├── README.md                # Guia técnico do frontend (scripts, padrões de UI, Nginx)
 │   ├── vite.config.js           # Proxy de desenvolvimento (/auth, /tasks, /goals -> :8080)
 │   └── package.json
 ├── .env.example                 # Modelo de variáveis de ambiente para Docker
 └── docker-compose.yml           # Orquestração: postgres + backend + frontend
 ```
+
+---
+
+## Documentação dos Módulos
+
+Para detalhes específicos de execução local, estrutura interna e convenções de cada camada, acesse os guias dedicados:
+
+- **[Backend (`backend/README.md`)](backend/README.md):** configuração de banco PostgreSQL, Maven Wrapper, variáveis de ambiente, Swagger/OpenAPI e build Docker.
+- **[Frontend (`frontend/README.md`)](frontend/README.md):** scripts Vite/Oxlint, estrutura de componentes, padrões de tratamento de erro, tema claro/escuro e configuração do Nginx.
 
 ---
 
