@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +21,10 @@ import java.util.List;
 @Tag(name = "Tarefas", description = "Gerenciamento de tarefas pessoais (Tasks) do usuário autenticado") // Agrupamento no Swagger UI
 @RestController // Combina @Controller + @ResponseBody (retorna JSON automaticamente)
 @RequestMapping("/tasks") // Prefixo de todas as rotas dessa classe
+@RequiredArgsConstructor // Gera construtor com o campo 'final' para injeção de dependências
 public class TaskController {
 
-    @Autowired // Injeta o serviço automaticamente
-    private TaskService taskService; // Injeta o serviço para usar os métodos de negócio
+    private final TaskService taskService; // Injeta o serviço para usar os métodos de negócio
 
     @Operation(summary = "Listar tarefas", description = "Retorna todas as tarefas pertencentes ao usuário autenticado.")
     @ApiResponses({
