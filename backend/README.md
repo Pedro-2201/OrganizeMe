@@ -77,10 +77,13 @@ As configurações padrão estão em [application.properties](src/main/resources
 Outras definições atuais em `application.properties`:
 - `server.port=8080`
 - `spring.jpa.hibernate.ddl-auto=update`
+- `springdoc.swagger-ui.tags-sorter=alpha`, `operations-sorter=method` e `persist-authorization=true` (ordenação alfabética de grupos, ordenação por método HTTP e persistência do token no Swagger UI)
 
 ---
 
 ## Documentação da API (Swagger / OpenAPI)
+
+Os contratos HTTP são gerados automaticamente a partir das anotações nos controllers e DTOs (`@Tag`, `@Operation`, `@ApiResponses`, `@Parameter`, `@Schema`) e configurados globalmente em [OpenApiConfig.java](src/main/java/com/pedro_2201/organizeme_api/common/config/OpenApiConfig.java).
 
 Com a aplicação em execução, a documentação interativa fica disponível publicamente em:
 
@@ -89,6 +92,10 @@ Com a aplicação em execução, a documentação interativa fica disponível pu
   - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - **Via Docker Compose / Nginx:**
   - Swagger UI: `http://localhost/swagger-ui.html`
+
+Para testar rotas protegidas (`/auth/me`, `/goals`, `/tasks`) no Swagger UI:
+1. Execute `POST /auth/login` (o navegador armazena automaticamente o cookie `HttpOnly` `organizeme_token` no mesmo domínio), **ou**
+2. Copie o `token` retornado no login/cadastro e cole no botão **Authorize** (`bearerAuth`) no topo da página.
 
 ---
 
@@ -100,6 +107,8 @@ O código segue organização **Package-by-Feature** (agrupado por domínio de n
 backend/
 ├── src/main/java/com/pedro_2201/organizeme_api/
 │   ├── OrganizemeApiApplication.java
+│   ├── common/
+│   │   └── config/          # OpenApiConfig (metadados da API e esquemas JWT/Cookie no Swagger)
 │   ├── auth/
 │   │   ├── config/          # ApplicationConfig, SecurityConfig (stateless + CORS)
 │   │   ├── controller/      # AuthController (/auth/register, /login, /logout, /me)
