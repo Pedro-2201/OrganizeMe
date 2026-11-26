@@ -5,28 +5,24 @@ import com.pedro_2201.organizeme_api.auth.dto.LoginRequestDTO;
 import com.pedro_2201.organizeme_api.auth.dto.RegisterRequestDTO;
 import com.pedro_2201.organizeme_api.auth.model.User;
 import com.pedro_2201.organizeme_api.auth.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service // Indica que a classe é um componente de serviço do Spring (contém as regras de negócio)
+@RequiredArgsConstructor // Gera construtor com os campos 'final' para injeção de dependências
 public class AuthService {
 
-    @Autowired // Injeta o repositório automaticamente
-    private UserRepository userRepository; // Injeta o repositório para operações de acesso a dados de usuários
-
-    @Autowired // Injeta o codificador de senhas automaticamente
-    private PasswordEncoder passwordEncoder; // Injeta o codificador BCrypt para hashear senhas
-
-    @Autowired // Injeta o serviço de JWT automaticamente
-    private JwtService jwtService; // Injeta o serviço responsável pela geração e validação de tokens JWT
-
-    @Autowired // Injeta o gerenciador de autenticação automaticamente
-    private AuthenticationManager authenticationManager; // Injeta o gerenciador do Spring Security para autenticar credenciais
+    private final UserRepository userRepository; // Injeta o repositório para operações de acesso a dados de usuários
+    private final PasswordEncoder passwordEncoder; // Injeta o codificador BCrypt para hashear senhas
+    private final JwtService jwtService; // Injeta o serviço responsável pela geração e validação de tokens JWT
+    private final AuthenticationManager authenticationManager; // Injeta o gerenciador do Spring Security para autenticar credenciais
 
     // Registra um novo usuário no sistema e retorna o token JWT gerado
+    @Transactional
     public AuthResponseDTO register(RegisterRequestDTO request) {
         // Valida se o email já está cadastrado no sistema
         if (userRepository.findByEmail(request.email()).isPresent()) {
@@ -47,6 +43,7 @@ public class AuthService {
     }
 
     // Autentica o usuário pelas credenciais e retorna o token JWT
+    @Transactional(readOnly = true)
     public AuthResponseDTO login(LoginRequestDTO request) {
         // Aciona o AuthenticationManager para validar o email e a senha informados
         authenticationManager.authenticate(
