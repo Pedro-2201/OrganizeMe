@@ -7,23 +7,23 @@ import com.pedro_2201.organizeme_api.goal.model.Goal;
 import com.pedro_2201.organizeme_api.goal.repository.GoalRepository;
 import com.pedro_2201.organizeme_api.task.model.Task;
 import com.pedro_2201.organizeme_api.task.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor // Gera construtor com todos os campos 'final' para injeção de dependências
 public class GoalService {
 
-    @Autowired
-    private GoalRepository goalRepository; // Injeta o repositório para usar os métodos de acesso a dados
-
-    @Autowired
-    private TaskRepository taskRepository; // Injeta o repositório de tasks para desvincular tarefas ao excluir meta
+    private final GoalRepository goalRepository; // Injeta o repositório para usar os métodos de acesso a dados
+    private final TaskRepository taskRepository; // Injeta o repositório de tasks para desvincular tarefas ao excluir meta
 
     // Busca todas as metas pertencentes exclusivamente ao usuário autenticado
+    @Transactional(readOnly = true)
     public List<GoalResponseDTO> getAllGoals(User user) {
         return goalRepository.findByUser(user)
                 .stream()
@@ -32,17 +32,20 @@ public class GoalService {
     }
 
     // Busca uma entidade Goal específica garantindo que ela pertence ao usuário autenticado (uso interno e entre serviços)
+    @Transactional(readOnly = true)
     public Goal getGoalEntityById(Long id, User user) {
         return goalRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meta não encontrada com o ID: " + id));
     }
 
     // Busca uma meta específica garantindo que ela pertence ao usuário autenticado e retorna o DTO
+    @Transactional(readOnly = true)
     public GoalResponseDTO getGoalById(Long id, User user) {
         return GoalResponseDTO.fromEntity(getGoalEntityById(id, user));
     }
 
     // Cria uma nova meta associando-a obrigatoriamente ao usuário autenticado
+    @Transactional
     public GoalResponseDTO createGoal(GoalRequestDTO request, User user) {
         Goal goal = Goal.builder()
                 .title(request.title())
@@ -56,6 +59,7 @@ public class GoalService {
     }
 
     // Atualiza os campos de uma meta existente garantindo que pertence ao usuário autenticado
+    @Transactional
     public GoalResponseDTO updateGoal(Long id, GoalRequestDTO request, User user) {
         Goal existingGoal = getGoalEntityById(id, user);
         existingGoal.setTitle(request.title());
@@ -67,6 +71,7 @@ public class GoalService {
     }
 
     // Alterna apenas o status de conclusão da meta sem reenviar o objeto completo
+    @Transactional
     public GoalResponseDTO toggleGoalCompleted(Long id, User user) {
         Goal existingGoal = getGoalEntityById(id, user);
         existingGoal.setCompleted(!existingGoal.isCompleted());
@@ -75,6 +80,7 @@ public class GoalService {
     }
 
     // Remove uma meta garantindo que ela pertence ao usuário autenticado
+    @Transactional
     public void deleteGoal(Long id, User user) {
         Goal existingGoal = getGoalEntityById(id, user);
         List<Task> linkedTasks = taskRepository.findByGoal(existingGoal);
