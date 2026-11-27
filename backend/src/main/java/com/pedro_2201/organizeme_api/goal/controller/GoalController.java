@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +21,10 @@ import java.util.List;
 @Tag(name = "Metas", description = "Gerenciamento de metas pessoais (Goals) do usuário autenticado") // Agrupamento no Swagger UI
 @RestController
 @RequestMapping("/goals")
+@RequiredArgsConstructor // Gera construtor com o campo 'final' para injeção de dependências
 public class GoalController {
 
-    @Autowired
-    private GoalService goalService; // Injeta o serviço para usar os métodos de negócio
+    private final GoalService goalService; // Injeta o serviço para usar os métodos de negócio
 
     @Operation(summary = "Listar metas", description = "Retorna todas as metas pertencentes ao usuário autenticado.")
     @ApiResponses({

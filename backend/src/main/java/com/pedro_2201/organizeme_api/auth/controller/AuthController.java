@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -27,15 +27,13 @@ import java.util.Map;
 @Tag(name = "Autenticação", description = "Cadastro, login, logout e validação da sessão do usuário") // Nome e descrição do grupo no Swagger UI
 @RestController // Combina @Controller + @ResponseBody (retorna JSON automaticamente)
 @RequestMapping("/auth") // Prefixo de todas as rotas dessa classe
+@RequiredArgsConstructor // Gera construtor com os campos 'final' para injeção de dependências
 public class AuthController {
 
     public static final String TOKEN_COOKIE_NAME = "organizeme_token";
 
-    @Autowired // Injeta o serviço automaticamente
-    private AuthService authService; // Injeta o serviço para usar os métodos de negócio de autenticação
-
-    @Autowired
-    private JwtService jwtService; // Injeta o serviço JWT para obter o tempo de expiração do cookie
+    private final AuthService authService; // Injeta o serviço para usar os métodos de negócio de autenticação
+    private final JwtService jwtService; // Injeta o serviço JWT para obter o tempo de expiração do cookie
 
     @SecurityRequirements // Sobrescreve o cadeado global: rota pública (não exige token prévio)
     @Operation(summary = "Cadastrar novo usuário", description = "Cria uma nova conta, emite o cookie HttpOnly de sessão e retorna o token JWT.")

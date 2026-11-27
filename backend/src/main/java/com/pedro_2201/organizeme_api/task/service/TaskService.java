@@ -8,23 +8,23 @@ import com.pedro_2201.organizeme_api.task.dto.TaskResponseDTO;
 import com.pedro_2201.organizeme_api.task.model.Priority;
 import com.pedro_2201.organizeme_api.task.model.Task;
 import com.pedro_2201.organizeme_api.task.repository.TaskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor // Gera construtor com todos os campos 'final' para injeção de dependências
 public class TaskService {
 
-    @Autowired // Injeta o repositório automaticamente
-    private TaskRepository taskRepository; // Injeta o repositório para usar os métodos de acesso a dados
-
-    @Autowired
-    private GoalService goalService; // Injeta o serviço de metas para validar a titularidade caso a tarefa seja vinculada a uma meta
+    private final TaskRepository taskRepository; // Injeta o repositório para usar os métodos de acesso a dados
+    private final GoalService goalService; // Injeta o serviço de metas para validar a titularidade caso a tarefa seja vinculada a uma meta
 
     // Busca todas as tarefas do usuário autenticado
+    @Transactional(readOnly = true)
     public List<TaskResponseDTO> getAllTasks(User user) {
         return taskRepository.findByUser(user)
                 .stream()
@@ -33,17 +33,20 @@ public class TaskService {
     }
 
     // Busca a entidade Task específica garantindo que pertence ao usuário autenticado (uso interno)
+    @Transactional(readOnly = true)
     public Task getTaskEntityById(Long id, User user) {
         return taskRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada com o ID: " + id));
     }
 
     // Busca uma tarefa específica garantindo que pertence ao usuário autenticado e retorna o DTO
+    @Transactional(readOnly = true)
     public TaskResponseDTO getTaskById(Long id, User user) {
         return TaskResponseDTO.fromEntity(getTaskEntityById(id, user));
     }
 
     // Cria uma nova tarefa vinculando-a obrigatoriamente ao usuário autenticado
+    @Transactional
     public TaskResponseDTO createTask(TaskRequestDTO request, User user) {
         Long goalId = request.resolvedGoalId();
         Goal goal = goalId != null ? goalService.getGoalEntityById(goalId, user) : null;
@@ -64,6 +67,7 @@ public class TaskService {
     }
 
     // Atualiza os campos de uma tarefa existente garantindo que pertence ao usuário autenticado
+    @Transactional
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO request, User user) {
         Task existingTask = getTaskEntityById(id, user);
         existingTask.setTitle(request.title());
@@ -86,6 +90,7 @@ public class TaskService {
     }
 
     // Alterna apenas o status de conclusão da tarefa sem reenviar o objeto completo
+    @Transactional
     public TaskResponseDTO toggleTaskCompleted(Long id, User user) {
         Task existingTask = getTaskEntityById(id, user);
         existingTask.setCompleted(!existingTask.isCompleted());
@@ -94,6 +99,7 @@ public class TaskService {
     }
 
     // Remove uma tarefa garantindo que pertence ao usuário autenticado
+    @Transactional
     public void deleteTask(Long id, User user) {
         Task existingTask = getTaskEntityById(id, user);
         taskRepository.delete(existingTask);

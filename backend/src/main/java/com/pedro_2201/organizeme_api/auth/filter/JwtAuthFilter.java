@@ -7,7 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,13 +20,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component // Indica que a classe é um componente gerenciado pelo Spring
+@RequiredArgsConstructor // Gera construtor com todos os campos 'final' para injeção de dependências
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    @Autowired // Injeta o serviço de JWT automaticamente
-    private JwtService jwtService; // Injeta o serviço para validação e extração de dados do token JWT
-
-    @Autowired // Injeta o serviço de detalhes de usuário automaticamente
-    private UserDetailsService userDetailsService; // Injeta o serviço para carregar dados do usuário a partir do email
+    private final JwtService jwtService; // Injeta o serviço para validação e extração de dados do token JWT
+    private final UserDetailsService userDetailsService; // Injeta o serviço para carregar dados do usuário a partir do email
 
     // Intercepta cada requisição HTTP para validar o token JWT no header Authorization ou no cookie HttpOnly
     @Override
